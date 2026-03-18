@@ -1,0 +1,16 @@
+import React from "react"
+import ReactDOM from "react-dom/client"
+import App from "./App"
+import "./index.css"
+import { ThemeProvider } from "@/context/theme-context"
+import { I18nProvider } from "@/context/i18n-context"
+
+ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+  <React.StrictMode>
+    <I18nProvider>
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    </I18nProvider>
+  </React.StrictMode>
+)

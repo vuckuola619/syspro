@@ -1,0 +1,27 @@
+[package]
+name = "systempro"
+version = "1.0.0"
+description = "SystemPro - Advanced PC Optimizer"
+authors = ["you"]
+edition = "2021"
+
+[lib]
+name = "systempro_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5.6", features = [] }
+
+[dependencies]
+tauri = { version = "2.10.3", features = [] }
+tauri-plugin-opener = "2.5.3"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.138"
+sysinfo = "0.38.4"
+walkdir = "2.5.0"
+winreg = "0.56.0"
+sha2 = "0.10.9"
+log = "0.4.29"
+env_logger = "0.11.9"
+tauri-plugin-dialog = "2.6.0"
+
