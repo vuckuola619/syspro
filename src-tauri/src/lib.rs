@@ -238,7 +238,7 @@ fn scan_directory_recursive(path: &str, extensions: &[&str]) -> (u64, u64) {
 }
 
 #[tauri::command]
-fn get_system_overview() -> SystemOverview {
+async fn get_system_overview() -> SystemOverview {
     let mut sys = System::new_all();
     std::thread::sleep(std::time::Duration::from_millis(200));
     sys.refresh_all();
@@ -284,7 +284,7 @@ fn get_system_overview() -> SystemOverview {
 }
 
 #[tauri::command]
-fn run_health_check() -> HealthScore {
+async fn run_health_check() -> HealthScore {
     let temp_dir = env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".to_string());
     let (_, junk_mb) = scan_directory_size(&temp_dir);
 
@@ -297,7 +297,7 @@ fn run_health_check() -> HealthScore {
 }
 
 #[tauri::command]
-fn scan_junk_files() -> JunkScanResult {
+async fn scan_junk_files() -> JunkScanResult {
     let temp_dir = env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".to_string());
     let (temp_count, temp_mb) = scan_directory_size(&temp_dir);
 
@@ -351,7 +351,7 @@ fn scan_junk_files() -> JunkScanResult {
 }
 
 #[tauri::command]
-fn clean_junk_files(category_ids: Vec<String>) -> Result<(), String> {
+async fn clean_junk_files(category_ids: Vec<String>) -> Result<(), String> {
     let temp_dir = env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".to_string());
     let user_profile = env::var("USERPROFILE").unwrap_or_else(|_| "C:\\Users\\Default".to_string());
     
@@ -419,7 +419,7 @@ fn clean_junk_files(category_ids: Vec<String>) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn get_system_details() -> SystemDetails {
+async fn get_system_details() -> SystemDetails {
     let mut sys = System::new_all();
     std::thread::sleep(std::time::Duration::from_millis(200));
     sys.refresh_all();
@@ -514,7 +514,7 @@ fn read_registry_startup(hk: &RegKey, path: &str, loc_name: &str, enabled: bool)
 }
 
 #[tauri::command]
-fn get_startup_items() -> Vec<StartupItem> {
+async fn get_startup_items() -> Vec<StartupItem> {
     info!("[StartupManager] Reading startup items from registry");
     let mut items = Vec::new();
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
@@ -539,7 +539,7 @@ struct BootInfo {
 }
 
 #[tauri::command]
-fn get_boot_info() -> BootInfo {
+async fn get_boot_info() -> BootInfo {
     info!("[StartupManager] Reading boot time from Event Log");
     let output = std::process::Command::new("wevtutil")
         .args(&["qe", "System", "/q:*[System[(EventID=6005)]]", "/c:1", "/f:text", "/rd:true"])
@@ -580,7 +580,7 @@ struct ContextMenuItem {
 }
 
 #[tauri::command]
-fn get_context_menu_items() -> Vec<ContextMenuItem> {
+async fn get_context_menu_items() -> Vec<ContextMenuItem> {
     info!("[StartupManager] Reading context menu extensions");
     let mut items = Vec::new();
     let hkcr = RegKey::predef(HKEY_CLASSES_ROOT);
@@ -616,7 +616,7 @@ fn get_context_menu_items() -> Vec<ContextMenuItem> {
 }
 
 #[tauri::command]
-fn toggle_startup_item(name: String, enabled: bool) -> Result<(), String> {
+async fn toggle_startup_item(name: String, enabled: bool) -> Result<(), String> {
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     
@@ -661,7 +661,7 @@ fn toggle_startup_item(name: String, enabled: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn get_processes() -> PerformanceStats {
+async fn get_processes() -> PerformanceStats {
     let mut sys = System::new_all();
     std::thread::sleep(std::time::Duration::from_millis(200));
     sys.refresh_all();
@@ -690,7 +690,7 @@ fn get_processes() -> PerformanceStats {
 }
 
 #[tauri::command]
-fn optimize_memory() -> Result<String, String> {
+async fn optimize_memory() -> Result<String, String> {
     info!("[PerformanceMonitor] Starting memory optimization");
     
     let sys = System::new_all();
@@ -741,7 +741,7 @@ fn optimize_memory() -> Result<String, String> {
 }
 
 #[tauri::command]
-fn scan_privacy_traces() -> PrivacyScanResult {
+async fn scan_privacy_traces() -> PrivacyScanResult {
     info!("[PrivacyEraser] Starting deep privacy scan (Chrome + Edge + Firefox + Telemetry)");
     let user_profile = env::var("USERPROFILE").unwrap_or_else(|_| "C:\\Users\\Default".to_string());
     
@@ -798,7 +798,7 @@ fn scan_privacy_traces() -> PrivacyScanResult {
 }
 
 #[tauri::command]
-fn clean_privacy_traces(category_ids: Vec<String>) -> Result<(), String> {
+async fn clean_privacy_traces(category_ids: Vec<String>) -> Result<(), String> {
     info!("[PrivacyEraser] Cleaning {} categories", category_ids.len());
     let user_profile = env::var("USERPROFILE").unwrap_or_else(|_| "C:\\Users\\Default".to_string());
     let chrome_dir = format!("{}\\AppData\\Local\\Google\\Chrome\\User Data\\Default", user_profile);
@@ -862,7 +862,7 @@ fn clean_privacy_traces(category_ids: Vec<String>) -> Result<(), String> {
 
 
 #[tauri::command]
-fn scan_duplicate_files(target_dir: String) -> Result<Vec<DuplicateGroup>, String> {
+async fn scan_duplicate_files(target_dir: String) -> Result<Vec<DuplicateGroup>, String> {
     let mut size_map: HashMap<u64, Vec<String>> = HashMap::new();
     
     // Group by size first
@@ -923,7 +923,7 @@ fn scan_duplicate_files(target_dir: String) -> Result<Vec<DuplicateGroup>, Strin
 }
 
 #[tauri::command]
-fn clean_duplicate_files(files_to_delete: Vec<String>) -> Result<(), String> {
+async fn clean_duplicate_files(files_to_delete: Vec<String>) -> Result<(), String> {
     for path in files_to_delete {
         let _ = std::fs::remove_file(path);
     }
@@ -931,7 +931,7 @@ fn clean_duplicate_files(files_to_delete: Vec<String>) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn scan_drivers() -> Vec<DriverItem> {
+async fn scan_drivers() -> Vec<DriverItem> {
     info!("[DriverUpdater] Scanning real drivers via WMI Win32_PnPSignedDriver");
     
     let ps_command = r#"Get-CimInstance Win32_PnPSignedDriver | Where-Object { $_.DeviceName -ne $null -and $_.DriverVersion -ne $null } | Select-Object DeviceName, DriverVersion, DeviceClass, Manufacturer, InfName | ConvertTo-Json -Compress"#;
@@ -1039,7 +1039,7 @@ fn scan_drivers() -> Vec<DriverItem> {
 }
 
 #[tauri::command]
-fn update_driver(driver_name: String) -> Result<(), String> {
+async fn update_driver(driver_name: String) -> Result<(), String> {
     info!("[DriverUpdater] Triggering driver update scan for: {}", driver_name);
     
     // Use pnputil to trigger Windows to scan for updated drivers
@@ -1062,7 +1062,7 @@ fn update_driver(driver_name: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn shred_files(file_paths: Vec<String>) -> Result<(), String> {
+async fn shred_files(file_paths: Vec<String>) -> Result<(), String> {
     use std::io::{Seek, Write, SeekFrom};
     
     for path in &file_paths {
@@ -1122,7 +1122,7 @@ struct RegistryIssue {
 }
 
 #[tauri::command]
-fn scan_registry_issues() -> Vec<RegistryIssue> {
+async fn scan_registry_issues() -> Vec<RegistryIssue> {
     info!("[RegistryCleaner] Starting DEEP registry scan");
     let mut issues: Vec<RegistryIssue> = Vec::new();
     let mut id_counter = 0;
@@ -1241,7 +1241,7 @@ fn scan_registry_issues() -> Vec<RegistryIssue> {
 }
 
 #[tauri::command]
-fn backup_registry() -> Result<String, String> {
+async fn backup_registry() -> Result<String, String> {
     info!("[RegistryCleaner] Creating registry backup");
     let appdata = env::var("APPDATA").unwrap_or_else(|_| "C:\\Users\\Default\\AppData\\Roaming".into());
     let backup_dir = format!("{}\\SystemPro\\RegBackups", appdata);
@@ -1268,7 +1268,7 @@ fn backup_registry() -> Result<String, String> {
 }
 
 #[tauri::command]
-fn clean_registry_issues(issue_ids: Vec<String>) -> Result<String, String> {
+async fn clean_registry_issues(issue_ids: Vec<String>) -> Result<String, String> {
     info!("[RegistryCleaner] Deep cleaning {} issues", issue_ids.len());
     // In production, we'd delete the specific keys. For safety we log and count.
     let cleaned = issue_ids.len();
@@ -1297,7 +1297,7 @@ struct LiveStats {
 }
 
 #[tauri::command]
-fn get_live_stats() -> LiveStats {
+async fn get_live_stats() -> LiveStats {
     let mut sys = System::new_all();
     std::thread::sleep(std::time::Duration::from_millis(200));
     sys.refresh_all();
@@ -1414,7 +1414,7 @@ fn compute_folder_sizes(dir_path: &str, max_depth: u32) -> FolderSize {
 }
 
 #[tauri::command]
-fn analyze_disk_space(target_dir: String) -> Result<DiskAnalysisResult, String> {
+async fn analyze_disk_space(target_dir: String) -> Result<DiskAnalysisResult, String> {
     info!("[DiskAnalyzer] Starting analysis of: {}", target_dir);
     
     let root = compute_folder_sizes(&target_dir, 2);
@@ -1483,7 +1483,7 @@ fn read_apps_from_key(hkey: &RegKey, path: &str) -> Vec<InstalledApp> {
 }
 
 #[tauri::command]
-fn get_installed_apps() -> Vec<InstalledApp> {
+async fn get_installed_apps() -> Vec<InstalledApp> {
     info!("[AppUninstaller] Scanning installed applications from registry");
     
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
@@ -1507,7 +1507,7 @@ fn get_installed_apps() -> Vec<InstalledApp> {
 }
 
 #[tauri::command]
-fn uninstall_app(uninstall_string: String) -> Result<(), String> {
+async fn uninstall_app(uninstall_string: String) -> Result<(), String> {
     info!("[AppUninstaller] Running uninstall: {}", uninstall_string);
     
     if uninstall_string.is_empty() {
@@ -1533,7 +1533,7 @@ fn uninstall_app(uninstall_string: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn scan_app_leftovers(app_name: String, install_location: String) -> LeftoverResult {
+async fn scan_app_leftovers(app_name: String, install_location: String) -> LeftoverResult {
     info!("[AppUninstaller] Scanning leftovers for: {}", app_name);
     
     let mut leftover_files: Vec<String> = Vec::new();
@@ -1596,7 +1596,7 @@ fn scan_app_leftovers(app_name: String, install_location: String) -> LeftoverRes
 }
 
 #[tauri::command]
-fn clean_app_leftovers(files: Vec<String>, registry_keys: Vec<String>) -> Result<(), String> {
+async fn clean_app_leftovers(files: Vec<String>, registry_keys: Vec<String>) -> Result<(), String> {
     info!("[AppUninstaller] Cleaning {} files, {} registry keys", files.len(), registry_keys.len());
     
     for file_path in &files {
@@ -1633,7 +1633,7 @@ struct SoftwareItem {
 }
 
 #[tauri::command]
-fn check_software_updates() -> Vec<SoftwareItem> {
+async fn check_software_updates() -> Vec<SoftwareItem> {
     info!("[SoftwareUpdater] Scanning installed software and checking for updates via winget");
     
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
@@ -1744,7 +1744,7 @@ fn check_software_updates() -> Vec<SoftwareItem> {
 }
 
 #[tauri::command]
-fn update_software_winget(app_name: String) -> Result<String, String> {
+async fn update_software_winget(app_name: String) -> Result<String, String> {
     info!("[SoftwareUpdater] Attempting winget upgrade for: {}", app_name);
     
     // Try to find the app via winget and upgrade it silently
@@ -1776,7 +1776,7 @@ fn update_software_winget(app_name: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn update_all_software() -> Result<String, String> {
+async fn update_all_software() -> Result<String, String> {
     info!("[SoftwareUpdater] Running winget upgrade --all");
     
     let output = std::process::Command::new("winget")
@@ -1885,7 +1885,7 @@ struct DefragAnalysis {
 }
 
 #[tauri::command]
-fn analyze_fragmentation(drive: String) -> Result<DefragAnalysis, String> {
+async fn analyze_fragmentation(drive: String) -> Result<DefragAnalysis, String> {
     info!("[DiskDefrag] Analyzing fragmentation on {}", drive);
     
     let output = std::process::Command::new("defrag")
@@ -1926,7 +1926,7 @@ fn analyze_fragmentation(drive: String) -> Result<DefragAnalysis, String> {
 }
 
 #[tauri::command]
-fn run_defrag(drive: String) -> Result<String, String> {
+async fn run_defrag(drive: String) -> Result<String, String> {
     info!("[DiskDefrag] Starting optimization on {}", drive);
     
     let output = std::process::Command::new("defrag")
@@ -1953,7 +1953,7 @@ struct DnsResult {
 }
 
 #[tauri::command]
-fn test_dns_servers() -> Vec<DnsResult> {
+async fn test_dns_servers() -> Vec<DnsResult> {
     info!("[InternetBooster] Testing DNS server latencies");
     
     // Get current DNS to mark is_current
@@ -2006,7 +2006,7 @@ fn test_dns_servers() -> Vec<DnsResult> {
 }
 
 #[tauri::command]
-fn get_current_dns() -> Result<String, String> {
+async fn get_current_dns() -> Result<String, String> {
     let output = hidden_powershell()
         .args(&["-Command", "Get-DnsClientServerAddress -AddressFamily IPv4 | Where-Object { $_.ServerAddresses.Count -gt 0 } | Select-Object -First 1 | ForEach-Object { $_.ServerAddresses -join ', ' }"])
         .output()
@@ -2016,7 +2016,7 @@ fn get_current_dns() -> Result<String, String> {
 }
 
 #[tauri::command]
-fn flush_dns() -> Result<String, String> {
+async fn flush_dns() -> Result<String, String> {
     info!("[InternetBooster] Flushing DNS cache");
     
     let output = std::process::Command::new("ipconfig")
@@ -2030,7 +2030,7 @@ fn flush_dns() -> Result<String, String> {
 }
 
 #[tauri::command]
-fn set_dns_server(primary: String, secondary: String) -> Result<String, String> {
+async fn set_dns_server(primary: String, secondary: String) -> Result<String, String> {
     info!("[InternetBooster] Setting DNS to {} / {}", primary, secondary);
     
     // Get active interface name
@@ -2074,7 +2074,7 @@ fn open_in_explorer(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn delete_folder(path: String) -> Result<String, String> {
+async fn delete_folder(path: String) -> Result<String, String> {
     info!("[DiskAnalyzer] Deleting folder: {}", path);
     let p = std::path::Path::new(&path);
     if !p.exists() {
@@ -2089,7 +2089,7 @@ fn delete_folder(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn export_system_report() -> Result<String, String> {
+async fn export_system_report() -> Result<String, String> {
     info!("[Export] Generating system report");
     let ps_script = r#"
 $report = @()
@@ -2246,7 +2246,7 @@ struct JoinResult {
 }
 
 #[tauri::command]
-fn split_file(file_path: String, chunk_size_mb: f64) -> Result<SplitResult, String> {
+async fn split_file(file_path: String, chunk_size_mb: f64) -> Result<SplitResult, String> {
     info!("[FileSplitter] Splitting {} into {:.0}MB chunks", file_path, chunk_size_mb);
     
     let chunk_size = (chunk_size_mb * 1_048_576.0) as usize;
@@ -2304,7 +2304,7 @@ fn split_file(file_path: String, chunk_size_mb: f64) -> Result<SplitResult, Stri
 }
 
 #[tauri::command]
-fn join_files(chunk_paths: Vec<String>, output_path: String) -> Result<JoinResult, String> {
+async fn join_files(chunk_paths: Vec<String>, output_path: String) -> Result<JoinResult, String> {
     info!("[FileSplitter] Joining {} chunks into {}", chunk_paths.len(), output_path);
     
     let mut output = BufWriter::new(
@@ -2346,7 +2346,7 @@ struct BloatwareApp {
 }
 
 #[tauri::command]
-fn scan_bloatware() -> Vec<BloatwareApp> {
+async fn scan_bloatware() -> Vec<BloatwareApp> {
     info!("[Debloater] Scanning installed AppX packages");
     
     let ps = r#"Get-AppxPackage | Select-Object Name, PackageFullName, Publisher | ConvertTo-Json -Compress"#;
@@ -2430,7 +2430,7 @@ fn scan_bloatware() -> Vec<BloatwareApp> {
 }
 
 #[tauri::command]
-fn remove_bloatware(packages: Vec<String>) -> Result<String, String> {
+async fn remove_bloatware(packages: Vec<String>) -> Result<String, String> {
     info!("[Debloater] Removing {} packages", packages.len());
     let mut removed = 0;
     for pkg in &packages {
@@ -2445,7 +2445,7 @@ fn remove_bloatware(packages: Vec<String>) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn restore_bloatware(package_name: String) -> Result<String, String> {
+async fn restore_bloatware(package_name: String) -> Result<String, String> {
     info!("[Debloater] Restoring package: {}", package_name);
     let cmd = format!(
         "Get-AppxPackage -AllUsers '{}' | ForEach-Object {{Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppxManifest.xml\" -ErrorAction SilentlyContinue}}",
@@ -2484,7 +2484,7 @@ fn read_reg_dword(hkey: &RegKey, subkey_path: &str, value_name: &str) -> Option<
 }
 
 #[tauri::command]
-fn get_privacy_settings() -> Vec<PrivacyToggle> {
+async fn get_privacy_settings() -> Vec<PrivacyToggle> {
     info!("[PrivacyHardening] Reading privacy settings from registry");
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
@@ -2548,7 +2548,7 @@ fn get_privacy_settings() -> Vec<PrivacyToggle> {
 }
 
 #[tauri::command]
-fn set_privacy_setting(setting_id: String, enable: bool) -> Result<(), String> {
+async fn set_privacy_setting(setting_id: String, enable: bool) -> Result<(), String> {
     info!("[PrivacyHardening] Setting {} = {}", setting_id, enable);
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
@@ -2595,7 +2595,7 @@ struct RestorePointInfo {
 }
 
 #[tauri::command]
-fn create_restore_point(description: String) -> Result<String, String> {
+async fn create_restore_point(description: String) -> Result<String, String> {
     info!("[RestorePoint] Creating restore point: {}", description);
     let cmd = format!(
         "Checkpoint-Computer -Description '{}' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop",
@@ -2615,7 +2615,7 @@ fn create_restore_point(description: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn list_restore_points() -> Vec<RestorePointInfo> {
+async fn list_restore_points() -> Vec<RestorePointInfo> {
     info!("[RestorePoint] Listing restore points");
     let cmd = "Get-ComputerRestorePoint | Select-Object SequenceNumber, Description, CreationTime, RestorePointType | ConvertTo-Json -Compress";
     let mut command = hidden_powershell();
@@ -2677,7 +2677,7 @@ struct WindowsTweak {
 }
 
 #[tauri::command]
-fn get_windows_tweaks() -> Vec<WindowsTweak> {
+async fn get_windows_tweaks() -> Vec<WindowsTweak> {
     info!("[WindowsTweaks] Reading Windows tweak settings");
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     
@@ -2735,7 +2735,7 @@ fn get_windows_tweaks() -> Vec<WindowsTweak> {
 }
 
 #[tauri::command]
-fn set_windows_tweak(tweak_id: String, enable: bool) -> Result<(), String> {
+async fn set_windows_tweak(tweak_id: String, enable: bool) -> Result<(), String> {
     info!("[WindowsTweaks] Setting {} = {}", tweak_id, enable);
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     
@@ -2795,7 +2795,7 @@ struct ServiceItem {
 }
 
 #[tauri::command]
-fn get_services() -> Vec<ServiceItem> {
+async fn get_services() -> Vec<ServiceItem> {
     info!("[ServiceManager] Listing Windows services");
     let cmd = r#"Get-Service | Select-Object Name, DisplayName, Status, StartType, CanStop | ConvertTo-Json -Compress"#;
     let output = hidden_powershell()
@@ -2843,7 +2843,7 @@ fn get_services() -> Vec<ServiceItem> {
 }
 
 #[tauri::command]
-fn set_service_status(service_name: String, action: String) -> Result<String, String> {
+async fn set_service_status(service_name: String, action: String) -> Result<String, String> {
     info!("[ServiceManager] {} service: {}", action, service_name);
     let cmd = match action.as_str() {
         "stop" => format!("Stop-Service '{}' -Force -ErrorAction Stop", service_name),
@@ -2879,7 +2879,7 @@ struct EdgeSetting {
 }
 
 #[tauri::command]
-fn get_edge_settings() -> Vec<EdgeSetting> {
+async fn get_edge_settings() -> Vec<EdgeSetting> {
     info!("[EdgeManager] Reading Edge settings");
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
@@ -2910,7 +2910,7 @@ fn get_edge_settings() -> Vec<EdgeSetting> {
 }
 
 #[tauri::command]
-fn set_edge_setting(setting_id: String, enable: bool) -> Result<(), String> {
+async fn set_edge_setting(setting_id: String, enable: bool) -> Result<(), String> {
     info!("[EdgeManager] Setting {} = {}", setting_id, enable);
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
@@ -2953,7 +2953,7 @@ struct NetworkConnection {
 }
 
 #[tauri::command]
-fn get_network_connections() -> Vec<NetworkConnection> {
+async fn get_network_connections() -> Vec<NetworkConnection> {
     info!("[NetworkMonitor] Getting active connections");
     let cmd = r#"Get-NetTCPConnection -State Established,Listen -ErrorAction SilentlyContinue | Select-Object LocalAddress,LocalPort,RemoteAddress,RemotePort,State,OwningProcess | ConvertTo-Json -Compress"#;
     let output = hidden_powershell()
@@ -3013,7 +3013,7 @@ struct HostsEntry {
 }
 
 #[tauri::command]
-fn read_hosts_file() -> Vec<HostsEntry> {
+async fn read_hosts_file() -> Vec<HostsEntry> {
     info!("[HostsEditor] Reading hosts file");
     let hosts_path = r"C:\Windows\System32\drivers\etc\hosts";
     let content = match std::fs::read_to_string(hosts_path) {
@@ -3053,7 +3053,7 @@ fn read_hosts_file() -> Vec<HostsEntry> {
 }
 
 #[tauri::command]
-fn add_hosts_entry(ip: String, hostname: String) -> Result<(), String> {
+async fn add_hosts_entry(ip: String, hostname: String) -> Result<(), String> {
     info!("[HostsEditor] Adding {} -> {}", ip, hostname);
     let hosts_path = r"C:\Windows\System32\drivers\etc\hosts";
     let mut content = std::fs::read_to_string(hosts_path).map_err(|e| e.to_string())?;
@@ -3062,7 +3062,7 @@ fn add_hosts_entry(ip: String, hostname: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn remove_hosts_entry(ip: String, hostname: String) -> Result<(), String> {
+async fn remove_hosts_entry(ip: String, hostname: String) -> Result<(), String> {
     info!("[HostsEditor] Removing {} -> {}", ip, hostname);
     let hosts_path = r"C:\Windows\System32\drivers\etc\hosts";
     let content = std::fs::read_to_string(hosts_path).map_err(|e| e.to_string())?;
@@ -3080,7 +3080,7 @@ fn remove_hosts_entry(ip: String, hostname: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn block_telemetry_hosts() -> Result<String, String> {
+async fn block_telemetry_hosts() -> Result<String, String> {
     info!("[HostsEditor] Blocking telemetry domains");
     let hosts_path = r"C:\Windows\System32\drivers\etc\hosts";
     let mut content = std::fs::read_to_string(hosts_path).map_err(|e| e.to_string())?;
@@ -3123,7 +3123,7 @@ struct UpdateInfo {
 }
 
 #[tauri::command]
-fn get_update_history() -> Vec<UpdateInfo> {
+async fn get_update_history() -> Vec<UpdateInfo> {
     info!("[UpdateManager] Getting update history");
     let cmd = "Get-HotFix | Select-Object HotFixID, Description, InstalledOn | ConvertTo-Json -Compress";
     let output = hidden_powershell()
@@ -3157,7 +3157,7 @@ fn get_update_history() -> Vec<UpdateInfo> {
 }
 
 #[tauri::command]
-fn pause_windows_updates(days: u32) -> Result<String, String> {
+async fn pause_windows_updates(days: u32) -> Result<String, String> {
     info!("[UpdateManager] Pausing updates for {} days", days);
     let cmd = format!(
         "$pause = (Get-Date).AddDays({}); Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings' -Name 'PauseUpdatesExpiryTime' -Value $pause.ToString('yyyy-MM-ddTHH:mm:ssZ')",
@@ -3190,27 +3190,27 @@ struct OptimizeResult {
 }
 
 #[tauri::command]
-fn run_one_click_optimize() -> OptimizeResult {
+async fn run_one_click_optimize() -> OptimizeResult {
     info!("[OneClick] Running full system optimization");
     
     // 1. Clean junk
-    let junk = scan_junk_files();
+    let junk = scan_junk_files().await;
     let junk_mb: u64 = junk.categories.iter().map(|c| c.size_mb).sum();
     let junk_ids: Vec<String> = junk.categories.iter().map(|c| c.id.clone()).collect();
-    let _ = clean_junk_files(junk_ids);
+    let _ = clean_junk_files(junk_ids).await;
     
     // 2. Privacy scan
-    let privacy = scan_privacy_traces();
+    let privacy = scan_privacy_traces().await;
     let privacy_count: u64 = privacy.categories.iter().map(|c| c.items_count).sum();
     let privacy_ids: Vec<String> = privacy.categories.iter().map(|c| c.id.clone()).collect();
-    let _ = clean_privacy_traces(privacy_ids);
+    let _ = clean_privacy_traces(privacy_ids).await;
     
     // 3. Registry scan
-    let reg_issues = scan_registry_issues();
+    let reg_issues = scan_registry_issues().await;
     let reg_count = reg_issues.len() as u64;
     
     // 4. Check startup count
-    let startups = get_startup_items();
+    let startups = get_startup_items().await;
     let enabled_count = startups.iter().filter(|s| s.enabled).count() as u32;
     
     // Compute score_before from actual findings (more issues = lower score)
@@ -3253,7 +3253,7 @@ struct FirewallRule {
 }
 
 #[tauri::command]
-fn get_firewall_rules() -> Vec<FirewallRule> {
+async fn get_firewall_rules() -> Vec<FirewallRule> {
     info!("[Firewall] Listing firewall rules");
     let cmd = r#"Get-NetFirewallRule | Where-Object {$_.DisplayName -ne ''} | Select-Object -First 200 Name, DisplayName, Direction, Action, Enabled, Profile | ConvertTo-Json -Compress"#;
     let output = hidden_powershell()
@@ -3292,7 +3292,7 @@ fn get_firewall_rules() -> Vec<FirewallRule> {
 }
 
 #[tauri::command]
-fn toggle_firewall_rule(rule_name: String, enable: bool) -> Result<String, String> {
+async fn toggle_firewall_rule(rule_name: String, enable: bool) -> Result<String, String> {
     info!("[Firewall] {} rule: {}", if enable { "Enabling" } else { "Disabling" }, rule_name);
     let action = if enable { "True" } else { "False" };
     let cmd = format!("Set-NetFirewallRule -Name '{}' -Enabled {} -ErrorAction Stop", rule_name.replace('\'', "''"), action);
@@ -3305,7 +3305,7 @@ fn toggle_firewall_rule(rule_name: String, enable: bool) -> Result<String, Strin
 }
 
 #[tauri::command]
-fn add_firewall_rule(display_name: String, program_path: String, direction: String, action: String) -> Result<String, String> {
+async fn add_firewall_rule(display_name: String, program_path: String, direction: String, action: String) -> Result<String, String> {
     info!("[Firewall] Adding rule: {} for {}", display_name, program_path);
     let dir = if direction == "Outbound" { "Outbound" } else { "Inbound" };
     let act = if action == "Block" { "Block" } else { "Allow" };
@@ -3348,7 +3348,7 @@ fn is_prime(n: u64) -> bool {
 }
 
 #[tauri::command]
-fn run_benchmark() -> BenchmarkResult {
+async fn run_benchmark() -> BenchmarkResult {
     info!("[Benchmark] Starting system benchmark");
 
     // CPU Benchmark: Count primes up to 500,000
@@ -3430,7 +3430,7 @@ struct BoostResult {
 }
 
 #[tauri::command]
-fn activate_turbo_boost() -> BoostResult {
+async fn activate_turbo_boost() -> BoostResult {
     info!("[TurboBoost] Activating turbo/game boost mode");
 
     // Non-essential services safe to temporarily stop
@@ -3480,7 +3480,7 @@ fn activate_turbo_boost() -> BoostResult {
 }
 
 #[tauri::command]
-fn deactivate_turbo_boost() -> Result<String, String> {
+async fn deactivate_turbo_boost() -> Result<String, String> {
     info!("[TurboBoost] Deactivating turbo mode");
     let services = ["SysMain", "WSearch"];
     for svc in &services {
@@ -3511,7 +3511,7 @@ struct NetworkSpeed {
 }
 
 #[tauri::command]
-fn get_network_speed() -> Vec<NetworkSpeed> {
+async fn get_network_speed() -> Vec<NetworkSpeed> {
     let networks = Networks::new_with_refreshed_list();
     let mut speeds = Vec::new();
     for (name, data) in &networks {
@@ -3542,7 +3542,7 @@ struct PopupSetting {
 }
 
 #[tauri::command]
-fn get_popup_settings() -> Vec<PopupSetting> {
+async fn get_popup_settings() -> Vec<PopupSetting> {
     info!("[PopupBlocker] Reading notification/ad settings");
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let mut settings = Vec::new();
@@ -3575,7 +3575,7 @@ fn get_popup_settings() -> Vec<PopupSetting> {
 }
 
 #[tauri::command]
-fn set_popup_setting(setting_id: String, block: bool) -> Result<(), String> {
+async fn set_popup_setting(setting_id: String, block: bool) -> Result<(), String> {
     info!("[PopupBlocker] {} popup: {}", if block { "Blocking" } else { "Unblocking" }, setting_id);
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let ops: Vec<(&str, &str, u32)> = match setting_id.as_str() {
@@ -3600,7 +3600,7 @@ fn set_popup_setting(setting_id: String, block: bool) -> Result<(), String> {
 // ============================================================
 
 #[tauri::command]
-fn hide_file_or_folder(path: String, password: String) -> Result<String, String> {
+async fn hide_file_or_folder(path: String, password: String) -> Result<String, String> {
     info!("[FileHide] Hiding: {}", path);
     let meta = std::fs::metadata(&path).map_err(|e| format!("Path error: {}", e))?;
 
@@ -3634,7 +3634,7 @@ fn hide_file_or_folder(path: String, password: String) -> Result<String, String>
 }
 
 #[tauri::command]
-fn unhide_file_or_folder(path: String, password: String) -> Result<String, String> {
+async fn unhide_file_or_folder(path: String, password: String) -> Result<String, String> {
     info!("[FileHide] Unhiding: {}", path);
 
     if path.ends_with(".locked") {
@@ -3734,7 +3734,7 @@ struct RegistryDefragInfo {
 }
 
 #[tauri::command]
-fn analyze_registry_fragmentation() -> Vec<RegistryDefragInfo> {
+async fn analyze_registry_fragmentation() -> Vec<RegistryDefragInfo> {
     info!("[RegDefrag] Analyzing registry fragmentation");
     let hives = [
         ("HKLM\\SYSTEM", r"C:\Windows\System32\config\SYSTEM"),
@@ -3768,7 +3768,7 @@ fn analyze_registry_fragmentation() -> Vec<RegistryDefragInfo> {
 }
 
 #[tauri::command]
-fn run_registry_defrag() -> Result<String, String> {
+async fn run_registry_defrag() -> Result<String, String> {
     info!("[RegDefrag] Running registry defrag");
     // Use built-in Windows registry compaction on next reboot via NtCompactKeys
     // Safest approach: schedule a reg backup + compact via PowerShell
@@ -3805,7 +3805,7 @@ struct SlimTarget {
 }
 
 #[tauri::command]
-fn scan_slim_targets() -> Vec<SlimTarget> {
+async fn scan_slim_targets() -> Vec<SlimTarget> {
     info!("[SystemSlim] Scanning for removable system files");
     let mut targets = Vec::new();
 
@@ -3899,7 +3899,7 @@ fn dir_size_mb(path: &str) -> f64 {
 }
 
 #[tauri::command]
-fn clean_slim_target(target_id: String) -> Result<String, String> {
+async fn clean_slim_target(target_id: String) -> Result<String, String> {
     info!("[SystemSlim] Cleaning: {}", target_id);
     match target_id.as_str() {
         "windows_old" => {
@@ -3956,7 +3956,7 @@ struct SpeedTestResult {
 }
 
 #[tauri::command]
-fn run_speed_test() -> Result<SpeedTestResult, String> {
+async fn run_speed_test() -> Result<SpeedTestResult, String> {
     info!("[SpeedTest] Starting speed test");
     
     // Measure latency (ping)
@@ -4084,7 +4084,7 @@ struct SmartAttribute {
 }
 
 #[tauri::command]
-fn get_smart_health() -> Vec<DiskHealthInfo> {
+async fn get_smart_health() -> Vec<DiskHealthInfo> {
     info!("[DiskHealth] Reading S.M.A.R.T. data");
     
     let cmd = r#"
@@ -4181,7 +4181,7 @@ Get-PhysicalDisk | ForEach-Object {
 // ============================================================
 
 #[tauri::command]
-fn download_driver_update(device_name: String) -> Result<String, String> {
+async fn download_driver_update(device_name: String) -> Result<String, String> {
     info!("[DriverUpdate] Attempting to update driver for: {}", device_name);
 
     // Try Windows Update for the driver first
@@ -4255,7 +4255,7 @@ struct AppUpdateInfo {
 }
 
 #[tauri::command]
-fn check_for_app_update() -> Result<AppUpdateInfo, String> {
+async fn check_for_app_update() -> Result<AppUpdateInfo, String> {
     info!("[AutoUpdate] Checking for updates from GitHub Releases API");
     let current = "1.0.0";
 
