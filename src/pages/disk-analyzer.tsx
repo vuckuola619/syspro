@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { HardDrive, FolderSearch, RefreshCw, Folder, FileText, ChevronRight } from "lucide-react"
+import { HardDrive, FolderSearch, RefreshCw, Folder, FileText, ChevronRight, FolderOpen, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { open } from "@tauri-apps/plugin-dialog"
@@ -42,6 +42,7 @@ export default function DiskAnalyzerPage() {
   const [isScanning, setIsScanning] = useState(false)
   const [result, setResult] = useState<DiskAnalysisResult | null>(null)
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   async function selectAndScan() {
     try {
@@ -62,6 +63,27 @@ export default function DiskAnalyzerPage() {
     } finally {
       setIsScanning(false)
     }
+  }
+
+  async function openFolder(path: string) {
+    try { await invoke("open_in_explorer", { path }) }
+    catch (e) { console.error(e) }
+  }
+
+  async function deleteFolder(path: string, name: string) {
+    if (!confirm(`Delete "${name}" and all its contents?\n\n${path}\n\nThis cannot be undone.`)) return
+    setDeleting(path)
+    try {
+      await invoke<string>("delete_folder", { path })
+      // Re-scan to update the view
+      if (result) {
+        setResult({
+          ...result,
+          folders: result.folders.filter(f => f.path !== path)
+        })
+      }
+    } catch (e) { alert(String(e)) }
+    finally { setDeleting(null) }
   }
 
   return (
@@ -139,14 +161,15 @@ export default function DiskAnalyzerPage() {
             return (
               <Card key={folder.path} className={isExpanded ? "border-primary/30" : ""}>
                 <CardContent className="p-0">
-                  <div
-                    className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors"
-                    onClick={() => setExpandedFolder(isExpanded ? null : folder.path)}
-                  >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: COLORS[i % COLORS.length] + "18" }}>
+                  <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors">
+                    <div
+                      className="flex h-9 w-9 items-center justify-center rounded-lg shrink-0"
+                      style={{ backgroundColor: COLORS[i % COLORS.length] + "18" }}
+                      onClick={() => setExpandedFolder(isExpanded ? null : folder.path)}
+                    >
                       <Folder className="h-4 w-4" style={{ color: COLORS[i % COLORS.length] }} />
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0" onClick={() => setExpandedFolder(isExpanded ? null : folder.path)}>
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium truncate">{folder.name}</p>
                         <Badge variant="secondary" className="text-[10px]">{folder.file_count.toLocaleString()} files</Badge>
@@ -157,7 +180,32 @@ export default function DiskAnalyzerPage() {
                       <p className="text-sm font-semibold">{formatSize(folder.size_mb)}</p>
                       <p className="text-xs text-muted-foreground">{percent.toFixed(1)}%</p>
                     </div>
-                    <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost" size="sm"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-blue-600"
+                        onClick={(e) => { e.stopPropagation(); openFolder(folder.path) }}
+                        title="Open in Explorer"
+                      >
+                        <FolderOpen className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost" size="sm"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600"
+                        onClick={(e) => { e.stopPropagation(); deleteFolder(folder.path, folder.name) }}
+                        disabled={deleting === folder.path}
+                        title="Delete folder"
+                      >
+                        {deleting === folder.path
+                          ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                          : <Trash2 className="h-3.5 w-3.5" />
+                        }
+                      </Button>
+                      <ChevronRight
+                        className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                        onClick={() => setExpandedFolder(isExpanded ? null : folder.path)}
+                      />
+                    </div>
                   </div>
 
                   {/* Expanded Children */}
@@ -168,6 +216,14 @@ export default function DiskAnalyzerPage() {
                           <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                           <p className="text-xs truncate flex-1 text-muted-foreground">{child.name}</p>
                           <span className="text-xs font-medium shrink-0">{formatSize(child.size_mb)}</span>
+                          <Button
+                            variant="ghost" size="sm"
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-blue-600"
+                            onClick={() => openFolder(child.path)}
+                            title="Open in Explorer"
+                          >
+                            <FolderOpen className="h-3 w-3" />
+                          </Button>
                         </div>
                       ))}
                     </div>

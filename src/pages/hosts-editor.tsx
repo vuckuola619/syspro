@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { FileText, RefreshCw, Plus, ShieldBan } from "lucide-react"
+import { FileText, RefreshCw, Plus, ShieldBan, Trash2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
 
@@ -16,6 +16,7 @@ export default function HostsEditorPage() {
   const [newIp, setNewIp] = useState("0.0.0.0")
   const [newHost, setNewHost] = useState("")
   const [result, setResult] = useState("")
+  const [removing, setRemoving] = useState<string | null>(null)
 
   async function load() {
     setIsLoading(true)
@@ -33,6 +34,17 @@ export default function HostsEditorPage() {
       setResult(`Added ${newIp} → ${newHost}`)
       await load()
     } catch (e: unknown) { setResult(String(e)) }
+  }
+
+  async function removeEntry(ip: string, hostname: string) {
+    const key = `${ip}_${hostname}`
+    setRemoving(key)
+    try {
+      await invoke("remove_hosts_entry", { ip, hostname })
+      setResult(`Removed ${ip} → ${hostname}`)
+      await load()
+    } catch (e: unknown) { setResult(String(e)) }
+    finally { setRemoving(null) }
   }
 
   async function blockTelemetry() {
@@ -73,17 +85,35 @@ export default function HostsEditorPage() {
       {result && <Card><CardContent className="p-2 text-xs font-medium">{result}</CardContent></Card>}
 
       <div className="space-y-1">
-        {entries.map((e, i) => (
-          <Card key={i} className={e.enabled ? "" : "opacity-50"}>
-            <CardContent className="p-2.5 flex items-center gap-3 text-xs font-mono">
-              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <span className="w-32 text-blue-600">{e.ip}</span>
-              <span className="flex-1 truncate">{e.hostname}</span>
-              {!e.enabled && <Badge variant="outline" className="text-[10px]">Disabled</Badge>}
-              {e.comment && <span className="text-muted-foreground text-[10px]">{e.comment}</span>}
-            </CardContent>
-          </Card>
-        ))}
+        {entries.map((e, i) => {
+          const key = `${e.ip}_${e.hostname}`
+          const isComment = e.hostname.startsWith("#") || e.comment.startsWith("#")
+          return (
+            <Card key={i} className={e.enabled ? "" : "opacity-50"}>
+              <CardContent className="p-2.5 flex items-center gap-3 text-xs font-mono">
+                <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="w-32 text-blue-600">{e.ip}</span>
+                <span className="flex-1 truncate">{e.hostname}</span>
+                {!e.enabled && <Badge variant="outline" className="text-[10px]">Disabled</Badge>}
+                {e.comment && <span className="text-muted-foreground text-[10px]">{e.comment}</span>}
+                {!isComment && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-muted-foreground hover:text-red-600"
+                    onClick={(ev) => { ev.stopPropagation(); removeEntry(e.ip, e.hostname) }}
+                    disabled={removing === key}
+                  >
+                    {removing === key
+                      ? <RefreshCw className="h-3 w-3 animate-spin" />
+                      : <Trash2 className="h-3 w-3" />
+                    }
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
     </div>
   )

@@ -38,6 +38,7 @@ import {
   Search,
   HeartPulse,
   ChevronDown,
+  FileDown,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -94,6 +95,7 @@ const navigation: NavItem[] = [
   { name: "System Info", href: "/system-info", icon: Cpu, category: "Utilities" },
   { name: "Scheduled Clean", href: "/scheduled-clean", icon: Calendar, category: "Utilities" },
   { name: "Restore Points", href: "/restore-points", icon: History, category: "Utilities" },
+  { name: "Export Report", href: "/export-report", icon: FileDown, category: "Utilities" },
 ]
 
 const categories = ["All", "Overview", "Cleaning", "Performance", "Privacy & Security", "System Tools", "Disk & Files", "Network", "Utilities"]

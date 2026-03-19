@@ -1912,6 +1912,17 @@ struct DnsResult {
 fn test_dns_servers() -> Vec<DnsResult> {
     info!("[InternetBooster] Testing DNS server latencies");
     
+    // Get current DNS to mark is_current
+    let current_dns = {
+        let output = hidden_powershell()
+            .args(&["-Command", "Get-DnsClientServerAddress -AddressFamily IPv4 | Where-Object { $_.ServerAddresses.Count -gt 0 } | Select-Object -First 1 -ExpandProperty ServerAddresses | Select-Object -First 1"])
+            .output();
+        output.as_ref().ok()
+            .and_then(|o| String::from_utf8_lossy(&o.stdout).trim().lines().next().map(|s| s.to_string()))
+            .unwrap_or_default()
+    };
+    info!("[InternetBooster] Current DNS: {}", current_dns);
+    
     let servers = vec![
         ("Cloudflare", "1.1.1.1", "1.0.0.1"),
         ("Google", "8.8.8.8", "8.8.4.4"),
@@ -1934,18 +1945,30 @@ fn test_dns_servers() -> Vec<DnsResult> {
             Err(_) => 9999.0,
         };
         
+        let is_current = current_dns == *primary || current_dns == *secondary;
+        
         results.push(DnsResult {
             name: name.to_string(),
             primary: primary.to_string(),
             secondary: secondary.to_string(),
             latency_ms: (latency * 10.0).round() / 10.0,
-            is_current: false,
+            is_current,
         });
     }
     
     results.sort_by(|a, b| a.latency_ms.partial_cmp(&b.latency_ms).unwrap_or(std::cmp::Ordering::Equal));
     info!("[InternetBooster] Fastest DNS: {} ({:.1}ms)", results[0].name, results[0].latency_ms);
     results
+}
+
+#[tauri::command]
+fn get_current_dns() -> Result<String, String> {
+    let output = hidden_powershell()
+        .args(&["-Command", "Get-DnsClientServerAddress -AddressFamily IPv4 | Where-Object { $_.ServerAddresses.Count -gt 0 } | Select-Object -First 1 | ForEach-Object { $_.ServerAddresses -join ', ' }"])
+        .output()
+        .map_err(|e| format!("Failed: {}", e))?;
+    let dns = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    Ok(if dns.is_empty() { "DHCP (Automatic)".to_string() } else { dns })
 }
 
 #[tauri::command]
@@ -1994,6 +2017,169 @@ fn set_dns_server(primary: String, secondary: String) -> Result<String, String> 
     
     info!("[InternetBooster] DNS set to {} / {} on {}", primary, secondary, interface_name);
     Ok(format!("DNS set to {} / {} on {}", primary, secondary, interface_name))
+}
+
+#[tauri::command]
+fn open_in_explorer(path: String) -> Result<(), String> {
+    info!("[DiskAnalyzer] Opening in explorer: {}", path);
+    std::process::Command::new("explorer")
+        .arg(&path)
+        .spawn()
+        .map_err(|e| format!("Failed to open explorer: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
+fn delete_folder(path: String) -> Result<String, String> {
+    info!("[DiskAnalyzer] Deleting folder: {}", path);
+    let p = std::path::Path::new(&path);
+    if !p.exists() {
+        return Err("Path does not exist".to_string());
+    }
+    if p.is_dir() {
+        std::fs::remove_dir_all(p).map_err(|e| format!("Failed: {}. Try running as Administrator.", e))?;
+    } else {
+        std::fs::remove_file(p).map_err(|e| format!("Failed: {}", e))?;
+    }
+    Ok(format!("Deleted: {}", path))
+}
+
+#[tauri::command]
+fn export_system_report() -> Result<String, String> {
+    info!("[Export] Generating system report");
+    let ps_script = r#"
+$report = @()
+$report += "=============================================="
+$report += "     SYSTEMPRO - SYSTEM REPORT"
+$report += "     Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+$report += "=============================================="
+$report += ""
+
+# OS Info
+$os = Get-CimInstance Win32_OperatingSystem
+$report += "--- OPERATING SYSTEM ---"
+$report += "Name: $($os.Caption)"
+$report += "Version: $($os.Version) Build $($os.BuildNumber)"
+$report += "Architecture: $($os.OSArchitecture)"
+$report += "Install Date: $($os.InstallDate)"
+$report += "Last Boot: $($os.LastBootUpTime)"
+$report += ""
+
+# CPU
+$cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
+$report += "--- PROCESSOR ---"
+$report += "Name: $($cpu.Name)"
+$report += "Cores: $($cpu.NumberOfCores) / Threads: $($cpu.NumberOfLogicalProcessors)"
+$report += "Max Clock: $($cpu.MaxClockSpeed) MHz"
+$report += "Current Load: $($cpu.LoadPercentage)%"
+$report += ""
+
+# Memory
+$mem = Get-CimInstance Win32_OperatingSystem
+$totalGB = [math]::Round($mem.TotalVisibleMemorySize / 1MB, 1)
+$freeGB = [math]::Round($mem.FreePhysicalMemory / 1MB, 1)
+$report += "--- MEMORY ---"
+$report += "Total: $totalGB GB"
+$report += "Available: $freeGB GB"
+$report += "Used: $([math]::Round($totalGB - $freeGB, 1)) GB ($([math]::Round((($totalGB - $freeGB) / $totalGB) * 100, 0))%)"
+$report += ""
+$sticks = Get-CimInstance Win32_PhysicalMemory
+foreach ($s in $sticks) {
+    $report += "  Slot: $($s.DeviceLocator) - $([math]::Round($s.Capacity / 1GB, 0)) GB @ $($s.Speed) MHz - $($s.Manufacturer)"
+}
+$report += ""
+
+# Disks
+$report += "--- STORAGE ---"
+$disks = Get-CimInstance Win32_DiskDrive
+foreach ($d in $disks) {
+    $sizeGB = [math]::Round($d.Size / 1GB, 1)
+    $report += "Drive: $($d.Model) - $sizeGB GB ($($d.MediaType))"
+    $report += "  Serial: $($d.SerialNumber)"
+    $report += "  Interface: $($d.InterfaceType)"
+}
+$report += ""
+$vols = Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 }
+foreach ($v in $vols) {
+    $totalG = [math]::Round($v.Size / 1GB, 1)
+    $freeG = [math]::Round($v.FreeSpace / 1GB, 1)
+    $report += "Volume $($v.DeviceID) ($($v.FileSystem)) - $freeG GB free / $totalG GB total"
+}
+$report += ""
+
+# GPU
+$report += "--- GRAPHICS ---"
+$gpus = Get-CimInstance Win32_VideoController
+foreach ($g in $gpus) {
+    $vramMB = [math]::Round($g.AdapterRAM / 1MB, 0)
+    $report += "GPU: $($g.Name) - $vramMB MB VRAM"
+    $report += "  Driver: $($g.DriverVersion) ($($g.DriverDate))"
+    $report += "  Resolution: $($g.CurrentHorizontalResolution)x$($g.CurrentVerticalResolution) @ $($g.CurrentRefreshRate)Hz"
+}
+$report += ""
+
+# Network
+$report += "--- NETWORK ---"
+$nics = Get-CimInstance Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled }
+foreach ($n in $nics) {
+    $report += "Adapter: $($n.Description)"
+    $report += "  IP: $($n.IPAddress -join ', ')"
+    $report += "  MAC: $($n.MACAddress)"
+    $report += "  DNS: $($n.DNSServerSearchOrder -join ', ')"
+    $report += "  Gateway: $($n.DefaultIPGateway -join ', ')"
+}
+$report += ""
+
+# Motherboard & BIOS
+$mb = Get-CimInstance Win32_BaseBoard | Select-Object -First 1
+$bios = Get-CimInstance Win32_BIOS | Select-Object -First 1
+$report += "--- MOTHERBOARD & BIOS ---"
+$report += "Board: $($mb.Manufacturer) $($mb.Product)"
+$report += "Serial: $($mb.SerialNumber)"
+$report += "BIOS: $($bios.Manufacturer) - $($bios.SMBIOSBIOSVersion)"
+$report += ""
+
+# Startup Programs
+$report += "--- STARTUP PROGRAMS ---"
+$startup = Get-CimInstance Win32_StartupCommand
+foreach ($s in $startup) {
+    $report += "  $($s.Name) - $($s.Command)"
+}
+$report += ""
+
+# Installed Software (top 30)
+$report += "--- INSTALLED SOFTWARE (Top 30 by date) ---"
+$apps = Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* |
+    Where-Object { $_.DisplayName } |
+    Sort-Object InstallDate -Descending |
+    Select-Object -First 30
+foreach ($a in $apps) {
+    $report += "  $($a.DisplayName) v$($a.DisplayVersion) ($($a.Publisher))"
+}
+$report += ""
+$report += "=============================================="
+$report += "     END OF REPORT"
+$report += "=============================================="
+
+$report -join "`n"
+"#;
+
+    let output = hidden_powershell()
+        .args(&["-Command", ps_script])
+        .output()
+        .map_err(|e| format!("Failed to generate report: {}", e))?;
+    let report = String::from_utf8_lossy(&output.stdout).to_string();
+    
+    if report.trim().is_empty() {
+        return Err("Report generation returned empty data".to_string());
+    }
+    
+    Ok(report)
+}
+
+#[tauri::command]
+fn save_text_file(path: String, content: String) -> Result<(), String> {
+    std::fs::write(&path, &content).map_err(|e| format!("Failed to save: {}", e))
 }
 
 // ============================================================
@@ -2829,6 +3015,24 @@ fn add_hosts_entry(ip: String, hostname: String) -> Result<(), String> {
     let mut content = std::fs::read_to_string(hosts_path).map_err(|e| e.to_string())?;
     content.push_str(&format!("\n{} {}", ip, hostname));
     std::fs::write(hosts_path, content).map_err(|e| format!("Failed: {}. Run as Administrator.", e))
+}
+
+#[tauri::command]
+fn remove_hosts_entry(ip: String, hostname: String) -> Result<(), String> {
+    info!("[HostsEditor] Removing {} -> {}", ip, hostname);
+    let hosts_path = r"C:\Windows\System32\drivers\etc\hosts";
+    let content = std::fs::read_to_string(hosts_path).map_err(|e| e.to_string())?;
+    
+    let new_content: Vec<&str> = content.lines().filter(|line| {
+        let trimmed = line.trim();
+        let effective = trimmed.trim_start_matches('#').trim();
+        let parts: Vec<&str> = effective.split_whitespace().collect();
+        // Keep line if it doesn't match the target ip+hostname
+        !(parts.len() >= 2 && parts[0] == ip && parts[1] == hostname)
+    }).collect();
+    
+    std::fs::write(hosts_path, new_content.join("\n"))
+        .map_err(|e| format!("Failed: {}. Run as Administrator.", e))
 }
 
 #[tauri::command]
@@ -4162,6 +4366,7 @@ pub fn run() {
             read_hosts_file,
             add_hosts_entry,
             block_telemetry_hosts,
+            remove_hosts_entry,
             get_update_history,
             pause_windows_updates,
             run_one_click_optimize,
@@ -4186,7 +4391,12 @@ pub fn run() {
             run_speed_test,
             get_smart_health,
             download_driver_update,
-            check_for_app_update
+            check_for_app_update,
+            get_current_dns,
+            open_in_explorer,
+            delete_folder,
+            export_system_report,
+            save_text_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

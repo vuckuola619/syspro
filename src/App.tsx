@@ -42,6 +42,7 @@ import RegistryDefragPage from "@/pages/registry-defrag"
 import SystemSlimmingPage from "@/pages/system-slimming"
 import SpeedTestPage from "@/pages/speed-test"
 import DiskHealthPage from "@/pages/disk-health"
+import ExportReportPage from "@/pages/export-report"
 
 import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
@@ -160,6 +161,7 @@ function App() {
           <Route path="/system-slimming" element={<SystemSlimmingPage />} />
           <Route path="/speed-test" element={<SpeedTestPage />} />
           <Route path="/disk-health" element={<DiskHealthPage />} />
+          <Route path="/export-report" element={<ExportReportPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
       </Routes>
