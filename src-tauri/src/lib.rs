@@ -4008,18 +4008,88 @@ struct AppUpdateInfo {
 
 #[tauri::command]
 fn check_for_app_update() -> Result<AppUpdateInfo, String> {
-    info!("[AutoUpdate] Checking for updates");
-    let current = "1.0.0".to_string();
-    
-    // For now, return current version info
-    // In production this would call a real API endpoint
+    info!("[AutoUpdate] Checking for updates from GitHub Releases API");
+    let current = "1.0.0";
+
+    let cmd = r#"
+try {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $headers = @{ 'User-Agent' = 'SystemPro-Updater' }
+    $resp = Invoke-RestMethod -Uri 'https://api.github.com/repos/vuckuola619/syspro/releases/latest' -Headers $headers -TimeoutSec 10
+    $result = @{
+        tag = $resp.tag_name
+        body = $resp.body
+        url = $resp.html_url
+    } | ConvertTo-Json -Compress
+    Write-Output $result
+} catch {
+    Write-Output '{"tag":"","body":"","url":""}'
+}
+"#;
+
+    let output = hidden_powershell()
+        .args(&["-Command", cmd])
+        .output()
+        .map_err(|e| format!("Failed to check for updates: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+    // Parse the JSON response
+    let json_val: serde_json::Value = serde_json::from_str(&stdout)
+        .unwrap_or_else(|_| serde_json::json!({"tag":"","body":"","url":""}));
+
+    let latest_tag = json_val.get("tag").and_then(|v| v.as_str()).unwrap_or("");
+    let body = json_val.get("body").and_then(|v| v.as_str()).unwrap_or("");
+    let url = json_val.get("url").and_then(|v| v.as_str()).unwrap_or("");
+
+    // Strip leading 'v' from tag for comparison (e.g. "v1.1.0" -> "1.1.0")
+    let latest_version = latest_tag.trim_start_matches('v');
+
+    if latest_version.is_empty() {
+        // Could not reach GitHub — assume up to date
+        return Ok(AppUpdateInfo {
+            current_version: current.to_string(),
+            latest_version: current.to_string(),
+            update_available: false,
+            release_notes: "Could not check for updates. You may be offline.".into(),
+            download_url: String::new(),
+        });
+    }
+
+    let update_available = version_is_newer(current, latest_version);
+
+    let release_notes = if update_available {
+        body.to_string()
+    } else {
+        "You are running the latest version.".into()
+    };
+
+    info!("[AutoUpdate] Current: {}, Latest: {}, Update: {}", current, latest_version, update_available);
+
     Ok(AppUpdateInfo {
-        current_version: current.clone(),
-        latest_version: current.clone(),
-        update_available: false,
-        release_notes: "You are running the latest version.".into(),
-        download_url: String::new(),
+        current_version: current.to_string(),
+        latest_version: latest_version.to_string(),
+        update_available,
+        release_notes,
+        download_url: url.to_string(),
     })
+}
+
+/// Compare two semver strings like "1.0.0" vs "1.1.0".
+/// Returns true if `latest` is newer than `current`.
+fn version_is_newer(current: &str, latest: &str) -> bool {
+    let parse = |v: &str| -> Vec<u32> {
+        v.split('.').filter_map(|s| s.parse::<u32>().ok()).collect()
+    };
+    let c = parse(current);
+    let l = parse(latest);
+    for i in 0..3 {
+        let cv = c.get(i).copied().unwrap_or(0);
+        let lv = l.get(i).copied().unwrap_or(0);
+        if lv > cv { return true; }
+        if lv < cv { return false; }
+    }
+    false
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

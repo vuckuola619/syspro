@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
-import { Info, Sun, Moon, Monitor, Upload, X, Image, Globe, RefreshCw, CheckCircle2, Package } from "lucide-react"
+import { Info, Sun, Moon, Monitor, Upload, X, Image, Globe, RefreshCw, CheckCircle2, Package, Download } from "lucide-react"
 import { useTheme, ACCENT_OPTIONS } from "@/context/theme-context"
 import { useI18n } from "@/context/i18n-context"
 import { useRef, useState } from "react"
@@ -194,9 +194,25 @@ export default function SettingsPage() {
             </Button>
           </div>
           {updateInfo && (
-            <div className={`rounded-lg p-3 text-sm flex items-center gap-2 ${updateInfo.update_available ? "bg-blue-50 text-blue-700" : "bg-emerald-50 text-emerald-700"}`}>
-              {updateInfo.update_available ? <Package className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-              {updateInfo.release_notes}
+            <div className="space-y-2">
+              <div className={`rounded-lg p-3 text-sm flex items-center gap-2 ${updateInfo.update_available ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"}`}>
+                {updateInfo.update_available ? <Package className="h-4 w-4 shrink-0" /> : <CheckCircle2 className="h-4 w-4 shrink-0" />}
+                {updateInfo.update_available
+                  ? <span>SystemPro <strong>v{updateInfo.latest_version}</strong> is available!</span>
+                  : <span>{updateInfo.release_notes}</span>
+                }
+              </div>
+              {updateInfo.update_available && updateInfo.release_notes && (
+                <div className="rounded-lg border bg-muted/50 p-3 text-xs leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Changelog</p>
+                  {updateInfo.release_notes}
+                </div>
+              )}
+              {updateInfo.update_available && updateInfo.download_url && (
+                <Button size="sm" className="gap-1.5 w-full" onClick={() => { import("@tauri-apps/plugin-opener").then(m => m.openUrl(updateInfo.download_url)) }}>
+                  <Download className="h-3.5 w-3.5" /> Download v{updateInfo.latest_version}
+                </Button>
+              )}
             </div>
           )}
         </CardContent>
