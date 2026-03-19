@@ -149,7 +149,7 @@ export function Sidebar() {
           <Cpu className="h-4.5 w-4.5 text-white" />
         </div>
         <div className="flex flex-col">
-          <span className="text-sm font-semibold tracking-tight text-foreground">SystemPro</span>
+          <span className="text-sm font-semibold tracking-tight text-foreground">SABI</span>
           <span className="text-[10px] text-muted-foreground">v1.0.0</span>
         </div>
       </div>

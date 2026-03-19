@@ -1,12 +1,12 @@
 [package]
-name = "systempro"
+name = "sabi"
 version = "1.0.0"
-description = "SystemPro - Advanced PC Optimizer"
+description = "SABI - System Analytics & Boost Infrastructure"
 authors = ["you"]
 edition = "2021"
 
 [lib]
-name = "systempro_lib"
+name = "sabi_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

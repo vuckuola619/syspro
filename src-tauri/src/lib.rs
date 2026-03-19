@@ -1634,7 +1634,7 @@ struct SoftwareItem {
 
 #[tauri::command]
 fn check_software_updates() -> Vec<SoftwareItem> {
-    info!("[SoftwareUpdater] Scanning installed software versions");
+    info!("[SoftwareUpdater] Scanning installed software and checking for updates via winget");
     
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
@@ -1659,7 +1659,7 @@ fn check_software_updates() -> Vec<SoftwareItem> {
                     apps.push(SoftwareItem {
                         name,
                         current_version: version.clone(),
-                        latest_version: version, // We report current as latest (no update server)
+                        latest_version: version,
                         publisher,
                         needs_update: false,
                     });
@@ -1695,7 +1695,51 @@ fn check_software_updates() -> Vec<SoftwareItem> {
     apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     apps.dedup_by(|a, b| a.name.to_lowercase() == b.name.to_lowercase());
     
-    info!("[SoftwareUpdater] Found {} software with versions", apps.len());
+    // Now check winget upgrade for available updates
+    let winget_output = hidden_powershell()
+        .args(&["-Command", "winget upgrade --accept-source-agreements 2>$null | Out-String"])
+        .output();
+    
+    if let Ok(output) = winget_output {
+        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+        // Parse winget upgrade output — format: Name | Id | Version | Available | Source
+        for line in stdout.lines() {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            // Look for lines that contain a version pattern (x.y.z)
+            if parts.len() >= 4 {
+                let line_lower = line.to_lowercase();
+                for app in apps.iter_mut() {
+                    let app_lower = app.name.to_lowercase();
+                    // Match if app name appears in the winget line
+                    let name_words: Vec<&str> = app_lower.split_whitespace().collect();
+                    if name_words.len() >= 1 && name_words.iter().all(|w| line_lower.contains(w)) {
+                        // Try to find "Available" column (typically after the current version)
+                        for (i, part) in parts.iter().enumerate() {
+                            if *part == &app.current_version && i + 1 < parts.len() {
+                                let candidate = parts[i + 1];
+                                // Check if candidate looks like a version (contains a dot)
+                                if candidate.contains('.') && candidate != &app.current_version {
+                                    app.latest_version = candidate.to_string();
+                                    app.needs_update = true;
+                                    break;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Sort: needs_update first, then alphabetical
+    apps.sort_by(|a, b| {
+        b.needs_update.cmp(&a.needs_update)
+            .then(a.name.to_lowercase().cmp(&b.name.to_lowercase()))
+    });
+    
+    let updatable = apps.iter().filter(|a| a.needs_update).count();
+    info!("[SoftwareUpdater] Found {} software, {} need updates", apps.len(), updatable);
     apps
 }
 
@@ -2050,7 +2094,7 @@ fn export_system_report() -> Result<String, String> {
     let ps_script = r#"
 $report = @()
 $report += "=============================================="
-$report += "     SYSTEMPRO - SYSTEM REPORT"
+$report += "     SABI - SYSTEM REPORT"
 $report += "     Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 $report += "=============================================="
 $report += ""
@@ -3055,7 +3099,7 @@ fn block_telemetry_hosts() -> Result<String, String> {
     ];
     
     let mut added = 0;
-    content.push_str("\n\n# SystemPro Telemetry Block");
+    content.push_str("\n\n# SABI Telemetry Block");
     for domain in &telemetry_domains {
         if !content.contains(domain) {
             content.push_str(&format!("\n0.0.0.0 {}", domain));

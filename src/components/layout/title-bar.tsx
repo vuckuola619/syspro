@@ -33,7 +33,7 @@ export function TitleBar() {
             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
           </svg>
         </div>
-        <span className="text-xs font-semibold text-foreground/80 tracking-tight pointer-events-none">SystemPro</span>
+        <span className="text-xs font-semibold text-foreground/80 tracking-tight pointer-events-none">SABI</span>
         <span className="text-[10px] text-muted-foreground/60 font-medium pointer-events-none">v1.0.0</span>
       </div>
 
