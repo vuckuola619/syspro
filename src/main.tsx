@@ -5,6 +5,9 @@ import "./index.css"
 import { ThemeProvider } from "@/context/theme-context"
 import { I18nProvider } from "@/context/i18n-context"
 
+// Disable browser right-click context menu
+document.addEventListener("contextmenu", (e) => e.preventDefault())
+
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <I18nProvider>
