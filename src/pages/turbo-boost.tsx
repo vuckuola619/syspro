@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Zap, RefreshCw, Power, Server, MemoryStick, Gauge } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
 
 interface BoostResult {
@@ -16,12 +16,24 @@ export default function TurboBoostPage() {
   const [active, setActive] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  // Restore persisted state on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("turbo_boost_active")
+    if (saved === "true") {
+      setActive(true)
+      const savedResult = localStorage.getItem("turbo_boost_result")
+      if (savedResult) try { setResult(JSON.parse(savedResult)) } catch {}
+    }
+  }, [])
+
   async function activate() {
     setLoading(true)
     try {
       const res = await invoke<BoostResult>("activate_turbo_boost")
       setResult(res)
       setActive(true)
+      localStorage.setItem("turbo_boost_active", "true")
+      localStorage.setItem("turbo_boost_result", JSON.stringify(res))
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
   }
@@ -32,6 +44,8 @@ export default function TurboBoostPage() {
       await invoke("deactivate_turbo_boost")
       setActive(false)
       setResult(null)
+      localStorage.removeItem("turbo_boost_active")
+      localStorage.removeItem("turbo_boost_result")
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
   }
