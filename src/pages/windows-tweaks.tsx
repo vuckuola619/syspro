@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Wrench, RefreshCw } from "lucide-react"
 import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface Tweak {
   id: string; name: string; description: string; category: string; enabled: boolean
@@ -18,7 +19,7 @@ export default function WindowsTweaksPage() {
   async function load() {
     setIsLoading(true)
     try { setTweaks(await invoke<Tweak[]>("get_windows_tweaks")) }
-    catch (e) { console.error(e) }
+    catch (e) { toast.error(String(e)) }
     finally { setIsLoading(false) }
   }
   useEffect(() => { load() }, [])
@@ -28,7 +29,7 @@ export default function WindowsTweaksPage() {
     try {
       await invoke("set_windows_tweak", { tweakId: id, enable })
       setTweaks(prev => prev.map(t => t.id === id ? { ...t, enabled: enable } : t))
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setApplying(null) }
   }
 

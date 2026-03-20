@@ -1,53 +1,75 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 import { AppLayout } from "@/components/layout/app-layout"
-import DashboardPage from "@/pages/dashboard"
-import JunkCleanerPage from "@/pages/junk-cleaner"
-import RegistryCleanerPage from "@/pages/registry-cleaner"
-import StartupManagerPage from "@/pages/startup-manager"
-import PerformancePage from "@/pages/performance"
-import PrivacyPage from "@/pages/privacy"
-import SoftwareUpdaterPage from "@/pages/software-updater"
-import DriverUpdaterPage from "@/pages/driver-updater"
-import FileShredderPage from "@/pages/file-shredder"
-import DuplicateFinderPage from "@/pages/duplicate-finder"
-import SystemInfoPage from "@/pages/system-info"
-import SettingsPage from "@/pages/settings"
-import LiveMonitorPage from "@/pages/live-monitor"
-import DiskAnalyzerPage from "@/pages/disk-analyzer"
-import AppUninstallerPage from "@/pages/app-uninstaller"
-import ScheduledCleanPage from "@/pages/scheduled-clean"
-import DiskDefragPage from "@/pages/disk-defrag"
-import InternetBoosterPage from "@/pages/internet-booster"
-import FileSplitterPage from "@/pages/file-splitter"
-// New feature pages
-import WindowsDebloaterPage from "@/pages/windows-debloater"
-import PrivacyHardeningPage from "@/pages/privacy-hardening"
-import RestorePointsPage from "@/pages/restore-points"
-import WindowsTweaksPage from "@/pages/windows-tweaks"
-import ServiceManagerPage from "@/pages/service-manager"
-import EdgeManagerPage from "@/pages/edge-manager"
-import NetworkMonitorPage from "@/pages/network-monitor"
-import HostsEditorPage from "@/pages/hosts-editor"
-import UpdateManagerPage from "@/pages/update-manager"
-import OneClickPage from "@/pages/one-click"
-// Gap feature pages
-import FirewallManagerPage from "@/pages/firewall-manager"
-import BenchmarksPage from "@/pages/benchmarks"
-import TurboBoostPage from "@/pages/turbo-boost"
-import SpeedMonitorPage from "@/pages/speed-monitor"
-import PopupBlockerPage from "@/pages/popup-blocker"
-import FileHiderPage from "@/pages/file-hider"
-import PasswordGeneratorPage from "@/pages/password-generator"
-import RegistryDefragPage from "@/pages/registry-defrag"
-import SystemSlimmingPage from "@/pages/system-slimming"
-import SpeedTestPage from "@/pages/speed-test"
-import DiskHealthPage from "@/pages/disk-health"
-import ExportReportPage from "@/pages/export-report"
-
-import { useState, useEffect } from "react"
+import { lazy, Suspense, useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { openUrl } from "@tauri-apps/plugin-opener"
 
+// ─── Lazy-loaded pages (code-split for faster startup) ───
+const DashboardPage = lazy(() => import("@/pages/dashboard"))
+const JunkCleanerPage = lazy(() => import("@/pages/junk-cleaner"))
+const RegistryCleanerPage = lazy(() => import("@/pages/registry-cleaner"))
+const StartupManagerPage = lazy(() => import("@/pages/startup-manager"))
+const PerformancePage = lazy(() => import("@/pages/performance"))
+const PrivacyPage = lazy(() => import("@/pages/privacy"))
+const SoftwareUpdaterPage = lazy(() => import("@/pages/software-updater"))
+const DriverUpdaterPage = lazy(() => import("@/pages/driver-updater"))
+const FileShredderPage = lazy(() => import("@/pages/file-shredder"))
+const DuplicateFinderPage = lazy(() => import("@/pages/duplicate-finder"))
+const SystemInfoPage = lazy(() => import("@/pages/system-info"))
+const SettingsPage = lazy(() => import("@/pages/settings"))
+const LiveMonitorPage = lazy(() => import("@/pages/live-monitor"))
+const DiskAnalyzerPage = lazy(() => import("@/pages/disk-analyzer"))
+const AppUninstallerPage = lazy(() => import("@/pages/app-uninstaller"))
+const ScheduledCleanPage = lazy(() => import("@/pages/scheduled-clean"))
+const DiskDefragPage = lazy(() => import("@/pages/disk-defrag"))
+const InternetBoosterPage = lazy(() => import("@/pages/internet-booster"))
+const FileSplitterPage = lazy(() => import("@/pages/file-splitter"))
+const OneClickPage = lazy(() => import("@/pages/one-click"))
+const WindowsDebloaterPage = lazy(() => import("@/pages/windows-debloater"))
+const PrivacyHardeningPage = lazy(() => import("@/pages/privacy-hardening"))
+const RestorePointsPage = lazy(() => import("@/pages/restore-points"))
+const WindowsTweaksPage = lazy(() => import("@/pages/windows-tweaks"))
+const ServiceManagerPage = lazy(() => import("@/pages/service-manager"))
+const EdgeManagerPage = lazy(() => import("@/pages/edge-manager"))
+const NetworkMonitorPage = lazy(() => import("@/pages/network-monitor"))
+const HostsEditorPage = lazy(() => import("@/pages/hosts-editor"))
+const UpdateManagerPage = lazy(() => import("@/pages/update-manager"))
+const FirewallManagerPage = lazy(() => import("@/pages/firewall-manager"))
+const BenchmarksPage = lazy(() => import("@/pages/benchmarks"))
+const TurboBoostPage = lazy(() => import("@/pages/turbo-boost"))
+const SpeedMonitorPage = lazy(() => import("@/pages/speed-monitor"))
+const PopupBlockerPage = lazy(() => import("@/pages/popup-blocker"))
+const FileHiderPage = lazy(() => import("@/pages/file-hider"))
+const PasswordGeneratorPage = lazy(() => import("@/pages/password-generator"))
+const RegistryDefragPage = lazy(() => import("@/pages/registry-defrag"))
+const SystemSlimmingPage = lazy(() => import("@/pages/system-slimming"))
+const SpeedTestPage = lazy(() => import("@/pages/speed-test"))
+const DiskHealthPage = lazy(() => import("@/pages/disk-health"))
+const ExportReportPage = lazy(() => import("@/pages/export-report"))
+
+// ─── Loading Skeleton ───
+function PageSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div>
+        <div className="h-7 w-48 bg-muted rounded-md" />
+        <div className="h-4 w-72 bg-muted/60 rounded-md mt-2" />
+      </div>
+      <div className="grid grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-24 bg-muted/40 rounded-xl border border-border/50" />
+        ))}
+      </div>
+      <div className="h-48 bg-muted/30 rounded-xl border border-border/50" />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="h-32 bg-muted/30 rounded-xl border border-border/50" />
+        <div className="h-32 bg-muted/30 rounded-xl border border-border/50" />
+      </div>
+    </div>
+  )
+}
+
+// ─── Update Banner ───
 interface AppUpdateInfo {
   current_version: string
   latest_version: string
@@ -101,6 +123,7 @@ function UpdateBanner({ info, onDismiss }: { info: AppUpdateInfo; onDismiss: () 
   )
 }
 
+// ─── App ───
 function App() {
   const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null)
   const [dismissed, setDismissed] = useState(false)
@@ -120,49 +143,47 @@ function App() {
       )}
       <Routes>
         <Route element={<AppLayout />}>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/junk-cleaner" element={<JunkCleanerPage />} />
-          <Route path="/registry" element={<RegistryCleanerPage />} />
-          <Route path="/startup" element={<StartupManagerPage />} />
-          <Route path="/performance" element={<PerformancePage />} />
-          <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/software-updater" element={<SoftwareUpdaterPage />} />
-          <Route path="/driver-updater" element={<DriverUpdaterPage />} />
-          <Route path="/file-shredder" element={<FileShredderPage />} />
-          <Route path="/duplicate-finder" element={<DuplicateFinderPage />} />
-          <Route path="/system-info" element={<SystemInfoPage />} />
-          <Route path="/live-monitor" element={<LiveMonitorPage />} />
-          <Route path="/disk-analyzer" element={<DiskAnalyzerPage />} />
-          <Route path="/app-uninstaller" element={<AppUninstallerPage />} />
-          <Route path="/scheduled-clean" element={<ScheduledCleanPage />} />
-          <Route path="/disk-defrag" element={<DiskDefragPage />} />
-          <Route path="/internet-booster" element={<InternetBoosterPage />} />
-          <Route path="/file-splitter" element={<FileSplitterPage />} />
-          {/* New features */}
-          <Route path="/one-click" element={<OneClickPage />} />
-          <Route path="/debloater" element={<WindowsDebloaterPage />} />
-          <Route path="/privacy-hardening" element={<PrivacyHardeningPage />} />
-          <Route path="/restore-points" element={<RestorePointsPage />} />
-          <Route path="/windows-tweaks" element={<WindowsTweaksPage />} />
-          <Route path="/service-manager" element={<ServiceManagerPage />} />
-          <Route path="/edge-manager" element={<EdgeManagerPage />} />
-          <Route path="/network-monitor" element={<NetworkMonitorPage />} />
-          <Route path="/hosts-editor" element={<HostsEditorPage />} />
-          <Route path="/update-manager" element={<UpdateManagerPage />} />
-          {/* Gap features */}
-          <Route path="/firewall-manager" element={<FirewallManagerPage />} />
-          <Route path="/benchmarks" element={<BenchmarksPage />} />
-          <Route path="/turbo-boost" element={<TurboBoostPage />} />
-          <Route path="/speed-monitor" element={<SpeedMonitorPage />} />
-          <Route path="/popup-blocker" element={<PopupBlockerPage />} />
-          <Route path="/file-hider" element={<FileHiderPage />} />
-          <Route path="/password-generator" element={<PasswordGeneratorPage />} />
-          <Route path="/registry-defrag" element={<RegistryDefragPage />} />
-          <Route path="/system-slimming" element={<SystemSlimmingPage />} />
-          <Route path="/speed-test" element={<SpeedTestPage />} />
-          <Route path="/disk-health" element={<DiskHealthPage />} />
-          <Route path="/export-report" element={<ExportReportPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/" element={<Suspense fallback={<PageSkeleton />}><DashboardPage /></Suspense>} />
+          <Route path="/junk-cleaner" element={<Suspense fallback={<PageSkeleton />}><JunkCleanerPage /></Suspense>} />
+          <Route path="/registry" element={<Suspense fallback={<PageSkeleton />}><RegistryCleanerPage /></Suspense>} />
+          <Route path="/startup" element={<Suspense fallback={<PageSkeleton />}><StartupManagerPage /></Suspense>} />
+          <Route path="/performance" element={<Suspense fallback={<PageSkeleton />}><PerformancePage /></Suspense>} />
+          <Route path="/privacy" element={<Suspense fallback={<PageSkeleton />}><PrivacyPage /></Suspense>} />
+          <Route path="/software-updater" element={<Suspense fallback={<PageSkeleton />}><SoftwareUpdaterPage /></Suspense>} />
+          <Route path="/driver-updater" element={<Suspense fallback={<PageSkeleton />}><DriverUpdaterPage /></Suspense>} />
+          <Route path="/file-shredder" element={<Suspense fallback={<PageSkeleton />}><FileShredderPage /></Suspense>} />
+          <Route path="/duplicate-finder" element={<Suspense fallback={<PageSkeleton />}><DuplicateFinderPage /></Suspense>} />
+          <Route path="/system-info" element={<Suspense fallback={<PageSkeleton />}><SystemInfoPage /></Suspense>} />
+          <Route path="/live-monitor" element={<Suspense fallback={<PageSkeleton />}><LiveMonitorPage /></Suspense>} />
+          <Route path="/disk-analyzer" element={<Suspense fallback={<PageSkeleton />}><DiskAnalyzerPage /></Suspense>} />
+          <Route path="/app-uninstaller" element={<Suspense fallback={<PageSkeleton />}><AppUninstallerPage /></Suspense>} />
+          <Route path="/scheduled-clean" element={<Suspense fallback={<PageSkeleton />}><ScheduledCleanPage /></Suspense>} />
+          <Route path="/disk-defrag" element={<Suspense fallback={<PageSkeleton />}><DiskDefragPage /></Suspense>} />
+          <Route path="/internet-booster" element={<Suspense fallback={<PageSkeleton />}><InternetBoosterPage /></Suspense>} />
+          <Route path="/file-splitter" element={<Suspense fallback={<PageSkeleton />}><FileSplitterPage /></Suspense>} />
+          <Route path="/one-click" element={<Suspense fallback={<PageSkeleton />}><OneClickPage /></Suspense>} />
+          <Route path="/debloater" element={<Suspense fallback={<PageSkeleton />}><WindowsDebloaterPage /></Suspense>} />
+          <Route path="/privacy-hardening" element={<Suspense fallback={<PageSkeleton />}><PrivacyHardeningPage /></Suspense>} />
+          <Route path="/restore-points" element={<Suspense fallback={<PageSkeleton />}><RestorePointsPage /></Suspense>} />
+          <Route path="/windows-tweaks" element={<Suspense fallback={<PageSkeleton />}><WindowsTweaksPage /></Suspense>} />
+          <Route path="/service-manager" element={<Suspense fallback={<PageSkeleton />}><ServiceManagerPage /></Suspense>} />
+          <Route path="/edge-manager" element={<Suspense fallback={<PageSkeleton />}><EdgeManagerPage /></Suspense>} />
+          <Route path="/network-monitor" element={<Suspense fallback={<PageSkeleton />}><NetworkMonitorPage /></Suspense>} />
+          <Route path="/hosts-editor" element={<Suspense fallback={<PageSkeleton />}><HostsEditorPage /></Suspense>} />
+          <Route path="/update-manager" element={<Suspense fallback={<PageSkeleton />}><UpdateManagerPage /></Suspense>} />
+          <Route path="/firewall-manager" element={<Suspense fallback={<PageSkeleton />}><FirewallManagerPage /></Suspense>} />
+          <Route path="/benchmarks" element={<Suspense fallback={<PageSkeleton />}><BenchmarksPage /></Suspense>} />
+          <Route path="/turbo-boost" element={<Suspense fallback={<PageSkeleton />}><TurboBoostPage /></Suspense>} />
+          <Route path="/speed-monitor" element={<Suspense fallback={<PageSkeleton />}><SpeedMonitorPage /></Suspense>} />
+          <Route path="/popup-blocker" element={<Suspense fallback={<PageSkeleton />}><PopupBlockerPage /></Suspense>} />
+          <Route path="/file-hider" element={<Suspense fallback={<PageSkeleton />}><FileHiderPage /></Suspense>} />
+          <Route path="/password-generator" element={<Suspense fallback={<PageSkeleton />}><PasswordGeneratorPage /></Suspense>} />
+          <Route path="/registry-defrag" element={<Suspense fallback={<PageSkeleton />}><RegistryDefragPage /></Suspense>} />
+          <Route path="/system-slimming" element={<Suspense fallback={<PageSkeleton />}><SystemSlimmingPage /></Suspense>} />
+          <Route path="/speed-test" element={<Suspense fallback={<PageSkeleton />}><SpeedTestPage /></Suspense>} />
+          <Route path="/disk-health" element={<Suspense fallback={<PageSkeleton />}><DiskHealthPage /></Suspense>} />
+          <Route path="/export-report" element={<Suspense fallback={<PageSkeleton />}><ExportReportPage /></Suspense>} />
+          <Route path="/settings" element={<Suspense fallback={<PageSkeleton />}><SettingsPage /></Suspense>} />
         </Route>
       </Routes>
     </BrowserRouter>
@@ -170,4 +191,3 @@ function App() {
 }
 
 export default App
-

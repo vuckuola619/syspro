@@ -3,9 +3,10 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { TitleBar } from "@/components/layout/title-bar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useTheme } from "@/context/theme-context"
+import { Toaster } from "sonner"
 
 export function AppLayout() {
-  const { backgroundImage, backgroundOpacity } = useTheme()
+  const { backgroundImage, backgroundOpacity, mode } = useTheme()
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
@@ -29,6 +30,7 @@ export function AppLayout() {
           </ScrollArea>
         </main>
       </div>
+      <Toaster theme={mode === "dark" ? "dark" : mode === "light" ? "light" : "system"} richColors position="bottom-right" />
     </div>
   )
 }

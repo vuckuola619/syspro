@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Package, RefreshCw, Trash2, Search, AlertTriangle, CheckCircle2, FolderSearch } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface InstalledApp {
   name: string
@@ -40,7 +41,7 @@ export default function AppUninstallerPage() {
       setApps(data)
       setHasLoaded(true)
     } catch (e) {
-      console.error(e)
+      toast.error(String(e))
     } finally {
       setIsLoading(false)
     }
@@ -54,7 +55,7 @@ export default function AppUninstallerPage() {
       // Give the uninstaller time to launch
       setTimeout(() => setUninstallingApp(null), 3000)
     } catch (e) {
-      console.error(e)
+      toast.error(String(e))
       setUninstallingApp(null)
     }
   }
@@ -70,7 +71,7 @@ export default function AppUninstallerPage() {
       })
       setLeftovers(result)
     } catch (e) {
-      console.error(e)
+      toast.error(String(e))
     } finally {
       setScanningLeftovers(null)
     }
@@ -85,7 +86,7 @@ export default function AppUninstallerPage() {
       })
       setCleanedLeftovers(true)
     } catch (e) {
-      console.error(e)
+      toast.error(String(e))
     }
   }
 

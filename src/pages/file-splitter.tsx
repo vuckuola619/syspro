@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Scissors, RefreshCw, CheckCircle2, Merge, FileText } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 import { open, save } from "@tauri-apps/plugin-dialog"
 
 interface SplitResult {
@@ -35,7 +36,7 @@ export default function FileSplitterPage() {
       setSplitResult(null)
       const result = await invoke<SplitResult>("split_file", { filePath: file as string, chunkSizeMb: chunkSize })
       setSplitResult(result)
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setIsSplitting(false) }
   }
 
@@ -51,7 +52,7 @@ export default function FileSplitterPage() {
       setJoinResult(null)
       const result = await invoke<JoinResult>("join_files", { chunkPaths: files, outputPath: outputPath as string })
       setJoinResult(result)
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setIsJoining(false) }
   }
 

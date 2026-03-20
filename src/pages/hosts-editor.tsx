@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { FileText, RefreshCw, Plus, ShieldBan, Trash2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface HostsEntry {
   ip: string; hostname: string; comment: string; enabled: boolean
@@ -21,7 +22,7 @@ export default function HostsEditorPage() {
   async function load() {
     setIsLoading(true)
     try { setEntries(await invoke<HostsEntry[]>("read_hosts_file")) }
-    catch (e) { console.error(e) }
+    catch (e) { toast.error(String(e)) }
     finally { setIsLoading(false) }
   }
   useEffect(() => { load() }, [])

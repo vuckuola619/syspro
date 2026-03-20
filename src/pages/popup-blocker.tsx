@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { BellOff, RefreshCw, ToggleLeft, ToggleRight, ShieldCheck } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface PopupSetting {
   id: string
@@ -21,7 +22,7 @@ export default function PopupBlockerPage() {
     try {
       const result = await invoke<PopupSetting[]>("get_popup_settings")
       setSettings(result)
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setLoading(false) }
   }
 
@@ -30,7 +31,7 @@ export default function PopupBlockerPage() {
     try {
       await invoke("set_popup_setting", { settingId: id, block })
       setSettings(prev => prev.map(s => s.id === id ? { ...s, blocked: block } : s))
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setToggling(null) }
   }
 

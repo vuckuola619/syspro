@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress"
 import { HardDrive, Thermometer, RefreshCw, CheckCircle2, AlertTriangle, Activity } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface SmartAttribute { name: string; value: string; status: string }
 interface DiskHealth {
@@ -19,7 +20,7 @@ export default function DiskHealthPage() {
   async function scan() {
     setLoading(true)
     try { setDisks(await invoke<DiskHealth[]>("get_smart_health")) }
-    catch (e) { console.error(e) }
+    catch (e) { toast.error(String(e)) }
     finally { setLoading(false) }
   }
 

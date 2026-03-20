@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Download, RefreshCw, CheckCircle2, Package, Zap, AlertTriangle, Search } from "lucide-react"
 import { useState, useMemo } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface SoftwareItem {
   name: string
@@ -32,7 +33,8 @@ export default function SoftwareUpdaterPage() {
       const data = await invoke<SoftwareItem[]>("check_software_updates")
       setApps(data)
       setHasScanned(true)
-    } catch (e) { console.error(e) }
+    } catch (e) {toast.error("Update failed: " + String(e))
+ toast.error(String(e)) }
     finally { setIsScanning(false) }
   }
 
@@ -42,6 +44,8 @@ export default function SoftwareUpdaterPage() {
       const msg = await invoke<string>("update_software_winget", { appName: name })
       setUpdateResults(prev => ({ ...prev, [name]: msg }))
     } catch (e) {
+      toast.error("Update failed: " + String(e))
+
       setUpdateResults(prev => ({ ...prev, [name]: String(e) }))
     }
     finally { setUpdating(null) }
@@ -53,6 +57,8 @@ export default function SoftwareUpdaterPage() {
       const msg = await invoke<string>("update_all_software")
       setUpdateResults(prev => ({ ...prev, _all: msg }))
     } catch (e) {
+      toast.error("Update failed: " + String(e))
+
       setUpdateResults(prev => ({ ...prev, _all: String(e) }))
     }
     finally { setUpdatingAll(false) }

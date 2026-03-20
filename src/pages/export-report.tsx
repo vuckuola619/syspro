@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { FileDown, RefreshCw, Clipboard, CheckCircle2, FileText } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 import { save } from "@tauri-apps/plugin-dialog"
 
 export default function ExportReportPage() {
@@ -17,7 +18,8 @@ export default function ExportReportPage() {
     try {
       const data = await invoke<string>("export_system_report")
       setReport(data)
-    } catch (e) { alert(String(e)) }
+      toast.success("Report generated successfully")
+    } catch (e) { toast.error("Failed to generate report: " + String(e)) }
     finally { setLoading(false) }
   }
 
@@ -32,7 +34,7 @@ export default function ExportReportPage() {
         await invoke("save_text_file", { path, content: report })
         setSaved(path)
       }
-    } catch (e) { alert(String(e)) }
+    } catch (e) { toast.error("Failed to save: " + String(e)) }
   }
 
   function copyToClipboard() {

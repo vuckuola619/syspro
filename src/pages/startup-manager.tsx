@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 import { Card, CardContent } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
@@ -29,7 +30,7 @@ export default function StartupManagerPage() {
       const data = await invoke<StartupItem[]>("get_startup_items")
       setItems(data)
     } catch (e) {
-      console.error("Failed to load startup items:", e)
+      toast.error("Failed to load startup items:")
       // Fallback demo data
       setItems([
         { name: "Microsoft Edge", publisher: "Microsoft Corporation", command: "msedge.exe", location: "Registry (HKCU)", enabled: true, impact: "high" },
@@ -57,7 +58,7 @@ export default function StartupManagerPage() {
     try {
       await invoke("toggle_startup_item", { name: item.name, enabled: updated })
     } catch (e) {
-      console.error("Failed to toggle startup item:", e)
+      toast.error("Failed to toggle startup item:")
       // Revert on failure
       setItems((prev) =>
         prev.map((it, i) => (i === index ? { ...it, enabled: !updated } : it))

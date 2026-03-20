@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Shield, Search, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface FirewallRule {
   name: string
@@ -26,7 +27,7 @@ export default function FirewallManagerPage() {
     try {
       const result = await invoke<FirewallRule[]>("get_firewall_rules")
       setRules(result)
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setLoading(false) }
   }
 
@@ -35,7 +36,7 @@ export default function FirewallManagerPage() {
     try {
       await invoke("toggle_firewall_rule", { ruleName: name, enable })
       setRules(prev => prev.map(r => r.name === name ? { ...r, enabled: enable } : r))
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setToggling(null) }
   }
 

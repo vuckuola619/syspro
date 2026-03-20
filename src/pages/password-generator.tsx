@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { KeyRound, RefreshCw, Copy, Check, ShieldCheck } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface GeneratedPassword {
   password: string
@@ -28,7 +29,7 @@ export default function PasswordGeneratorPage() {
         length, useUppercase: uppercase, useLowercase: lowercase, useNumbers: numbers, useSymbols: symbols,
       })
       setResult(res)
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setLoading(false) }
   }
 

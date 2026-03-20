@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Network, RefreshCw, Search } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface Connection {
   local_address: string; local_port: number; remote_address: string; remote_port: number
@@ -19,7 +20,7 @@ export default function NetworkMonitorPage() {
   async function load() {
     setIsLoading(true)
     try { setConnections(await invoke<Connection[]>("get_network_connections")) }
-    catch (e) { console.error(e) }
+    catch (e) { toast.error(String(e)) }
     finally { setIsLoading(false) }
   }
 

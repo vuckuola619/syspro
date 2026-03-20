@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Database, RefreshCw, Wrench, HardDrive } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface RegistryDefragInfo {
   hive_name: string
@@ -23,7 +24,7 @@ export default function RegistryDefragPage() {
     try {
       const result = await invoke<RegistryDefragInfo[]>("analyze_registry_fragmentation")
       setHives(result)
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setLoading(false) }
   }
 

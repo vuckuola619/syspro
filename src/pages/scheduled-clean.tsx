@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, RefreshCw, CheckCircle2, Trash2, Shield, Database, Clock } from "lucide-react"
 import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface ScheduleConfig {
   enabled: boolean
@@ -33,7 +34,7 @@ export default function ScheduledCleanPage() {
       const msg = await invoke<string>("set_schedule_config", { config })
       setResult(msg)
       setSaved(true)
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setIsSaving(false) }
   }
 

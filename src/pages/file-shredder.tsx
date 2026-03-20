@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { FileX2, Upload, Trash2, AlertTriangle, RefreshCw } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 import { open } from "@tauri-apps/plugin-dialog"
 
 export default function FileShredderPage() {
@@ -22,7 +23,7 @@ export default function FileShredderPage() {
         setDone(false)
       }
     } catch (e) {
-      console.error(e)
+      toast.error(String(e))
     }
   }
 
@@ -34,7 +35,7 @@ export default function FileShredderPage() {
       setDone(true)
       setFiles([])
     } catch (e) {
-      console.error(e)
+      toast.error(String(e))
     } finally {
       setIsShredding(false)
     }

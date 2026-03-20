@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { History, Plus, RefreshCw, Clock, Settings } from "lucide-react"
 import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface RestorePoint {
   sequence_number: string; description: string; creation_time: string; restore_type: string
@@ -20,7 +21,7 @@ export default function RestorePointsPage() {
   async function load() {
     setIsLoading(true)
     try { setPoints(await invoke<RestorePoint[]>("list_restore_points")) }
-    catch (e) { console.error(e) }
+    catch (e) { toast.error(String(e)) }
     finally { setIsLoading(false) }
   }
 

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Globe, RefreshCw } from "lucide-react"
 import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface EdgeSetting {
   id: string; name: string; description: string; enabled: boolean
@@ -17,7 +18,7 @@ export default function EdgeManagerPage() {
   async function load() {
     setIsLoading(true)
     try { setSettings(await invoke<EdgeSetting[]>("get_edge_settings")) }
-    catch (e) { console.error(e) }
+    catch (e) { toast.error(String(e)) }
     finally { setIsLoading(false) }
   }
   useEffect(() => { load() }, [])
@@ -27,7 +28,7 @@ export default function EdgeManagerPage() {
     try {
       await invoke("set_edge_setting", { settingId: id, enable })
       setSettings(prev => prev.map(s => s.id === id ? { ...s, enabled: enable } : s))
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setApplying(null) }
   }
 

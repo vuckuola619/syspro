@@ -4,6 +4,7 @@ import { Shield, Globe, FileText, Search, RefreshCw, Trash2, CheckCircle2 } from
 import { Progress } from "@/components/ui/progress"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface PrivacyCategory {
   id: string
@@ -48,7 +49,9 @@ export default function PrivacyPage() {
       setCategories(mappedCategories)
       setHasScanned(true)
     } catch (e) {
-      console.error(e)
+     toast.error("Operation failed: " + String(e))
+
+      toast.error(String(e))
       clearInterval(interval)
     } finally {
       setIsScanning(false)
@@ -77,7 +80,9 @@ export default function PrivacyPage() {
         setIsScanning(false)
       }, 500)
     } catch (e) {
-      console.error(e)
+     toast.error("Operation failed: " + String(e))
+
+      toast.error(String(e))
       clearInterval(interval)
       setIsScanning(false)
     }

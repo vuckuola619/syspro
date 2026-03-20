@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Cpu, HardDrive, MemoryStick, RefreshCw, Zap, Timer, Award } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface BenchmarkResult {
   cpu_score: number
@@ -22,7 +23,7 @@ export default function BenchmarksPage() {
     try {
       const res = await invoke<BenchmarkResult>("run_benchmark")
       setResult(res)
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setRunning(false) }
   }
 

@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress"
 import { HardDrive, RefreshCw, Zap, CheckCircle2 } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface DefragAnalysis {
   drive: string
@@ -26,7 +27,7 @@ export default function DiskDefragPage() {
     try {
       const data = await invoke<DefragAnalysis>("analyze_fragmentation", { drive })
       setResults(prev => ({ ...prev, [drive]: data }))
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setIsAnalyzing(null) }
   }
 
@@ -38,7 +39,7 @@ export default function DiskDefragPage() {
       setOptimizeResult(msg)
       // Re-analyze after optimization
       await analyze(drive)
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setIsOptimizing(null) }
   }
 

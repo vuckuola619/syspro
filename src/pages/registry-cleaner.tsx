@@ -5,6 +5,7 @@ import { Database, Search, RefreshCw, Trash2, CheckCircle2, AlertTriangle } from
 import { Progress } from "@/components/ui/progress"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface RegistryIssue {
   id: string
@@ -40,7 +41,7 @@ export default function RegistryCleanerPage() {
       setIssues(result.map(i => ({ ...i, checked: true })))
       setHasScanned(true)
     } catch (e) {
-      console.error(e)
+      toast.error(String(e))
       clearInterval(interval)
     } finally {
       setIsScanning(false)
@@ -58,7 +59,7 @@ export default function RegistryCleanerPage() {
       await invoke("clean_registry_issues", { issueIds: ids })
       setHasCleaned(true)
     } catch (e) {
-      console.error(e)
+      toast.error(String(e))
     }
   }
 

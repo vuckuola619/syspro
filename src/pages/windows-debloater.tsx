@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Trash2, RefreshCw, Search, AlertTriangle, ShieldCheck, ShieldAlert } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface BloatwareApp {
   name: string
@@ -28,7 +29,7 @@ export default function WindowsDebloaterPage() {
       setApps(data)
       // Auto-select "safe" items
       setSelected(new Set(data.filter(a => a.category === "safe").map(a => a.name)))
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setIsScanning(false) }
   }
 
@@ -39,7 +40,7 @@ export default function WindowsDebloaterPage() {
       const msg = await invoke<string>("remove_bloatware", { packages })
       setResult(msg)
       await scan()
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setIsRemoving(false) }
   }
 

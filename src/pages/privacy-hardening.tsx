@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { ShieldCheck, RefreshCw, Lock } from "lucide-react"
 import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface PrivacyToggle {
   id: string; name: string; description: string; category: string
@@ -19,7 +20,7 @@ export default function PrivacyHardeningPage() {
   async function load() {
     setIsLoading(true)
     try { setSettings(await invoke<PrivacyToggle[]>("get_privacy_settings")) }
-    catch (e) { console.error(e) }
+    catch (e) { toast.error(String(e)) }
     finally { setIsLoading(false) }
   }
 
@@ -30,7 +31,7 @@ export default function PrivacyHardeningPage() {
     try {
       await invoke("set_privacy_setting", { settingId: id, enable })
       setSettings(prev => prev.map(s => s.id === id ? { ...s, enabled: enable } : s))
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setApplying(null) }
   }
 
@@ -39,7 +40,7 @@ export default function PrivacyHardeningPage() {
     for (const s of settings) {
       if (!s.enabled) {
         try { await invoke("set_privacy_setting", { settingId: s.id, enable: true }) }
-        catch (e) { console.error(e) }
+        catch (e) { toast.error(String(e)) }
       }
     }
     await load()

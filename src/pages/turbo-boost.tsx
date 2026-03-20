@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Zap, RefreshCw, Power, Server, MemoryStick, Gauge } from "lucide-react"
 import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface BoostResult {
   services_stopped: number
@@ -34,7 +35,7 @@ export default function TurboBoostPage() {
       setActive(true)
       localStorage.setItem("turbo_boost_active", "true")
       localStorage.setItem("turbo_boost_result", JSON.stringify(res))
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setLoading(false) }
   }
 
@@ -46,7 +47,7 @@ export default function TurboBoostPage() {
       setResult(null)
       localStorage.removeItem("turbo_boost_active")
       localStorage.removeItem("turbo_boost_result")
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setLoading(false) }
   }
 

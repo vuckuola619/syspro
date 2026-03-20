@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { HardDrive, FolderSearch, RefreshCw, Folder, FileText, ChevronRight, FolderOpen, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 import { open } from "@tauri-apps/plugin-dialog"
 
 interface FolderSize {
@@ -59,7 +60,7 @@ export default function DiskAnalyzerPage() {
       const data = await invoke<DiskAnalysisResult>("analyze_disk_space", { targetDir: selectedPath as string })
       setResult(data)
     } catch (e) {
-      console.error(e)
+      toast.error(String(e))
     } finally {
       setIsScanning(false)
     }
@@ -67,7 +68,7 @@ export default function DiskAnalyzerPage() {
 
   async function openFolder(path: string) {
     try { await invoke("open_in_explorer", { path }) }
-    catch (e) { console.error(e) }
+    catch (e) { toast.error(String(e)) }
   }
 
   async function deleteFolder(path: string, name: string) {

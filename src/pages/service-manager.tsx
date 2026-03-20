@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Server, RefreshCw, Search, Play, Square, Ban } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface ServiceItem {
   name: string; display_name: string; status: string; start_type: string; can_stop: boolean
@@ -20,7 +21,7 @@ export default function ServiceManagerPage() {
   async function load() {
     setIsLoading(true)
     try { setServices(await invoke<ServiceItem[]>("get_services")) }
-    catch (e) { console.error(e) }
+    catch (e) { toast.error(String(e)) }
     finally { setIsLoading(false) }
   }
 

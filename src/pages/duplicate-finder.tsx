@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress"
 import { CopyMinus, Search, RefreshCw, Trash2, FolderSearch } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 import { open } from "@tauri-apps/plugin-dialog"
 
 interface DuplicateGroup {
@@ -46,7 +47,7 @@ export default function DuplicateFinderPage() {
       setHasScanned(true)
       
     } catch (e) {
-      console.error(e)
+      toast.error(String(e))
     } finally {
       setIsScanning(false)
     }
@@ -61,7 +62,7 @@ export default function DuplicateFinderPage() {
       // Remove group from UI since duplicates are gone
       setGroups(groups.filter((_, i) => i !== groupIndex))
     } catch (e) {
-      console.error(e)
+      toast.error(String(e))
     }
   }
 

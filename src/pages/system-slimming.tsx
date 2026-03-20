@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Eraser, RefreshCw, Trash2, HardDrive, AlertTriangle, CheckCircle } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface SlimTarget {
   id: string
@@ -24,7 +25,7 @@ export default function SystemSlimmingPage() {
     try {
       const result = await invoke<SlimTarget[]>("scan_slim_targets")
       setTargets(result)
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setLoading(false) }
   }
 
@@ -33,7 +34,7 @@ export default function SystemSlimmingPage() {
     try {
       await invoke<string>("clean_slim_target", { targetId: id })
       setCleaned(prev => new Set([...prev, id]))
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setCleaning(null) }
   }
 

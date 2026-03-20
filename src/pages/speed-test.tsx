@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Gauge, ArrowDown, ArrowUp, Clock, RefreshCw, Wifi, Globe } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface SpeedResult {
   download_mbps: number; upload_mbps: number; latency_ms: number
@@ -20,7 +21,7 @@ export default function SpeedTestPage() {
       const res = await invoke<SpeedResult>("run_speed_test")
       setResult(res)
       setHistory(prev => [res, ...prev].slice(0, 10))
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setTesting(false) }
   }
 

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Wifi, RefreshCw, Zap, CheckCircle2, Globe } from "lucide-react"
 import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface DnsResult {
   name: string
@@ -34,7 +35,7 @@ export default function InternetBoosterPage() {
       setResults(data)
       // Refresh current DNS info
       invoke<string>("get_current_dns").then(setCurrentDns).catch(() => {})
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setIsTesting(false) }
   }
 
@@ -43,7 +44,7 @@ export default function InternetBoosterPage() {
     try {
       const msg = await invoke<string>("flush_dns")
       setFlushResult(msg)
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setIsFlushing(false) }
   }
 
@@ -56,7 +57,7 @@ export default function InternetBoosterPage() {
       invoke<string>("get_current_dns").then(setCurrentDns).catch(() => {})
       // Mark the selected one as current locally
       setResults(prev => prev.map(r => ({ ...r, is_current: r.name === dns.name })))
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
     finally { setIsSetting(null) }
   }
 

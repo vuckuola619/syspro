@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { MonitorCog, RefreshCw, Download, CheckCircle2, AlertTriangle } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface DriverItem {
   name: string
@@ -28,7 +29,7 @@ export default function DriverUpdaterPage() {
       setDrivers(result)
       setHasScanned(true)
     } catch (e) {
-      console.error(e)
+      toast.error(String(e))
     } finally {
       setIsScanning(false)
     }
@@ -44,7 +45,7 @@ export default function DriverUpdaterPage() {
           : d
       ))
     } catch (e) {
-      console.error(e)
+      toast.error(String(e))
     } finally {
       setUpdatingDriver(null)
     }

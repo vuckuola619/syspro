@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { RefreshCw, Pause, Shield } from "lucide-react"
 import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 
 interface UpdateInfo {
   hotfix_id: string; description: string; installed_on: string
@@ -17,7 +18,7 @@ export default function UpdateManagerPage() {
   async function load() {
     setIsLoading(true)
     try { setUpdates(await invoke<UpdateInfo[]>("get_update_history")) }
-    catch (e) { console.error(e) }
+    catch (e) { toast.error(String(e)) }
     finally { setIsLoading(false) }
   }
   useEffect(() => { load() }, [])

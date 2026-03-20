@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { EyeOff, Eye, Lock, FolderLock, RefreshCw, Upload, Copy, Check, FileArchive } from "lucide-react"
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 import { open } from "@tauri-apps/plugin-dialog"
 
 export default function FileHiderPage() {
@@ -20,14 +21,14 @@ export default function FileHiderPage() {
     try {
       const selected = await open({ title: "Select file or folder to hide" })
       if (selected) setPath(selected as string)
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
   }
 
   async function selectLockedFile() {
     try {
       const selected = await open({ title: "Select .locked file or hidden folder", filters: [{ name: "Locked files", extensions: ["locked"] }, { name: "All files", extensions: ["*"] }] })
       if (selected) setUnlockPath(selected as string)
-    } catch (e) { console.error(e) }
+    } catch (e) { toast.error(String(e)) }
   }
 
   async function hideFile() {
