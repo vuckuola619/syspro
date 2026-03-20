@@ -65,7 +65,7 @@ function UpdateBanner({ info, onDismiss }: { info: AppUpdateInfo; onDismiss: () 
         <div className="flex items-center gap-3">
           <span className="bg-white/20 rounded-full px-2 py-0.5 text-xs font-bold">NEW</span>
           <span>
-            SystemPro <strong>v{info.latest_version}</strong> is available!
+            SABI <strong>v{info.latest_version}</strong> is available!
             <span className="opacity-80 ml-1">(You have v{info.current_version})</span>
           </span>
           <button

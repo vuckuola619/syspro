@@ -61,9 +61,9 @@ export default function InternetBoosterPage() {
   }
 
   function latencyBg(ms: number) {
-    if (ms < 30) return "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
-    if (ms < 80) return "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400"
-    return "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400"
+    if (ms < 30) return "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:bg-emerald-50 dark:bg-emerald-500/100/10 dark:text-emerald-400"
+    if (ms < 80) return "bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:bg-amber-50 dark:bg-amber-500/100/10 dark:text-amber-400"
+    return "bg-red-50 dark:bg-red-500/10 text-red-700 dark:bg-red-50 dark:bg-red-500/100/10 dark:text-red-400"
   }
 
   return (
@@ -75,7 +75,7 @@ export default function InternetBoosterPage() {
 
       {/* Current DNS info */}
       {currentDns && (
-        <Card className="border-blue-200 dark:border-blue-500/30 bg-blue-50/30 dark:bg-blue-500/5">
+        <Card className="border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10/30 dark:bg-blue-50 dark:bg-blue-500/100/5">
           <CardContent className="flex items-center gap-2 p-3">
             <Wifi className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             <p className="text-sm"><span className="text-muted-foreground">Current DNS:</span> <span className="font-medium">{currentDns}</span></p>
@@ -95,19 +95,19 @@ export default function InternetBoosterPage() {
       </div>
 
       {flushResult && (
-        <Card className="border-emerald-200 bg-emerald-50/30">
+        <Card className="border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10/30">
           <CardContent className="flex items-center gap-2 p-3">
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            <p className="text-sm text-emerald-800">{flushResult.trim()}</p>
+            <p className="text-sm text-emerald-800 dark:text-emerald-200">{flushResult.trim()}</p>
           </CardContent>
         </Card>
       )}
 
       {setDnsResult && (
-        <Card className="border-blue-200 bg-blue-50/30">
+        <Card className="border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10/30">
           <CardContent className="flex items-center gap-2 p-3">
             <Wifi className="h-4 w-4 text-blue-600" />
-            <p className="text-sm text-blue-800">{setDnsResult}</p>
+            <p className="text-sm text-blue-800 dark:text-blue-200">{setDnsResult}</p>
           </CardContent>
         </Card>
       )}
@@ -115,16 +115,16 @@ export default function InternetBoosterPage() {
       {results.length > 0 && (
         <div className="space-y-1">
           {results.map((dns, i) => (
-            <Card key={dns.name} className={dns.is_current ? "border-blue-400 dark:border-blue-500/50 ring-1 ring-blue-200 dark:ring-blue-500/30" : i === 0 ? "border-emerald-200" : ""}>
+            <Card key={dns.name} className={dns.is_current ? "border-blue-400 dark:border-blue-500/50 ring-1 ring-blue-200 dark:ring-blue-500/30" : i === 0 ? "border-emerald-200 dark:border-emerald-500/30" : ""}>
               <CardContent className="flex items-center gap-4 p-3 px-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-500/10">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-50 dark:bg-blue-500/100/10">
                   <Globe className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium">{dns.name}</p>
-                    {i === 0 && <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">Fastest</Badge>}
-                    {dns.is_current && <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 text-[10px]">Active</Badge>}
+                    {i === 0 && <Badge className="bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[10px]">Fastest</Badge>}
+                    {dns.is_current && <Badge className="bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:bg-blue-50 dark:bg-blue-500/100/20 dark:text-blue-400 text-[10px]">Active</Badge>}
                   </div>
                   <p className="text-xs text-muted-foreground">{dns.primary} / {dns.secondary}</p>
                 </div>

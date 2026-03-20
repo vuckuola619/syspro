@@ -90,7 +90,7 @@ export default function DuplicateFinderPage() {
             </div>
           ) : hasScanned ? (
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-500/10">
                 <CopyMinus className="h-6 w-6 text-amber-600" />
               </div>
               <div className="flex-1">
@@ -101,7 +101,7 @@ export default function DuplicateFinderPage() {
             </div>
           ) : (
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-500/10">
                 <CopyMinus className="h-6 w-6 text-blue-600" />
               </div>
               <div className="flex-1">
@@ -122,7 +122,7 @@ export default function DuplicateFinderPage() {
                 <h3 className="text-sm font-medium">Group {gi + 1}</h3>
                 <Badge variant="secondary">{group.files.length} files · {group.size_mb} MB each</Badge>
               </div>
-              <Button size="sm" variant="outline" onClick={() => removeGroupDuplicates(gi)} className="gap-1.5 text-red-600 hover:text-red-700 hover:bg-red-50">
+              <Button size="sm" variant="outline" onClick={() => removeGroupDuplicates(gi)} className="gap-1.5 text-red-600 hover:text-red-700 dark:text-red-300 hover:bg-red-50 dark:bg-red-500/10">
                 <Trash2 className="h-3 w-3" /> Remove Duplicates
               </Button>
             </div>
@@ -131,9 +131,9 @@ export default function DuplicateFinderPage() {
                 <div key={fi} className="flex items-center px-4 py-2.5">
                   <span className="text-sm truncate flex-1">{file}</span>
                   {fi === group.keep_index ? (
-                    <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 text-[10px]">Keep</Badge>
+                    <Badge variant="secondary" className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[10px]">Keep</Badge>
                   ) : (
-                    <Badge variant="secondary" className="bg-red-50 text-red-700 text-[10px]">Duplicate</Badge>
+                    <Badge variant="secondary" className="bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 text-[10px]">Duplicate</Badge>
                   )}
                 </div>
               ))}

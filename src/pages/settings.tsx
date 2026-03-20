@@ -37,15 +37,15 @@ export default function SettingsPage() {
   }
 
   const accentColorMap: Record<string, string> = {
-    blue: "bg-blue-500", purple: "bg-purple-500", green: "bg-emerald-500", red: "bg-red-500",
-    orange: "bg-orange-500", pink: "bg-pink-500", cyan: "bg-cyan-500", indigo: "bg-indigo-500",
+    blue: "bg-blue-50 dark:bg-blue-500/100", purple: "bg-purple-50 dark:bg-purple-500/100", green: "bg-emerald-50 dark:bg-emerald-500/100", red: "bg-red-50 dark:bg-red-500/100",
+    orange: "bg-orange-50 dark:bg-orange-500/100", pink: "bg-pink-50 dark:bg-pink-500/100", cyan: "bg-cyan-50 dark:bg-cyan-500/100", indigo: "bg-indigo-50 dark:bg-indigo-500/100",
   }
 
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{t("settings.title")}</h1>
-        <p className="text-sm text-muted-foreground mt-1">Configure SystemPro preferences</p>
+        <p className="text-sm text-muted-foreground mt-1">Configure SABI preferences</p>
       </div>
 
       {/* Appearance */}
@@ -57,7 +57,7 @@ export default function SettingsPage() {
             <p className="text-sm font-medium mb-3">{t("settings.theme")}</p>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { value: "light" as const, label: "Light", icon: Sun, preview: "bg-white border-2" },
+                { value: "light" as const, label: "Light", icon: Sun, preview: "bg-white dark:bg-zinc-900 border-2" },
                 { value: "dark" as const, label: "Dark", icon: Moon, preview: "bg-slate-900 border-2" },
                 { value: "system" as const, label: "System", icon: Monitor, preview: "bg-gradient-to-r from-white to-slate-900 border-2" },
               ].map(t => (
@@ -86,7 +86,7 @@ export default function SettingsPage() {
                 <button
                   key={color}
                   onClick={() => setAccentColor(color)}
-                  className={`h-8 w-8 rounded-full transition-all ${accentColorMap[color] || "bg-blue-500"} ${accentColor === color ? "ring-2 ring-offset-2 ring-current scale-110" : "hover:scale-105"}`}
+                  className={`h-8 w-8 rounded-full transition-all ${accentColorMap[color] || "bg-blue-50 dark:bg-blue-500/100"} ${accentColor === color ? "ring-2 ring-offset-2 ring-current scale-110" : "hover:scale-105"}`}
                   title={color.charAt(0).toUpperCase() + color.slice(1)}
                 />
               ))}
@@ -169,11 +169,11 @@ export default function SettingsPage() {
       <Card>
         <CardHeader><CardTitle className="text-base">{t("settings.general")}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <SettingRow title={t("settings.run_startup")} description="Automatically start SystemPro when Windows boots" defaultChecked={false} />
+          <SettingRow title={t("settings.run_startup")} description="Automatically start SABI when Windows boots" defaultChecked={false} />
           <Separator />
-          <SettingRow title={t("settings.minimize_tray")} description="Keep SystemPro running in the system tray when closed" defaultChecked={true} />
+          <SettingRow title={t("settings.minimize_tray")} description="Keep SABI running in the system tray when closed" defaultChecked={true} />
           <Separator />
-          <SettingRow title={t("settings.check_updates")} description="Automatically check for SystemPro updates" defaultChecked={true} />
+          <SettingRow title={t("settings.check_updates")} description="Automatically check for SABI updates" defaultChecked={true} />
           <Separator />
           <SettingRow title={t("settings.portable_mode")} description="Store all settings in the app folder instead of user profile (requires restart)" defaultChecked={false} />
         </CardContent>
@@ -195,10 +195,10 @@ export default function SettingsPage() {
           </div>
           {updateInfo && (
             <div className="space-y-2">
-              <div className={`rounded-lg p-3 text-sm flex items-center gap-2 ${updateInfo.update_available ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"}`}>
+              <div className={`rounded-lg p-3 text-sm flex items-center gap-2 ${updateInfo.update_available ? "bg-blue-50 dark:bg-blue-500/100/10 text-blue-600 dark:text-blue-400 border border-blue-500/20" : "bg-emerald-50 dark:bg-emerald-500/100/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"}`}>
                 {updateInfo.update_available ? <Package className="h-4 w-4 shrink-0" /> : <CheckCircle2 className="h-4 w-4 shrink-0" />}
                 {updateInfo.update_available
-                  ? <span>SystemPro <strong>v{updateInfo.latest_version}</strong> is available!</span>
+                  ? <span>SABI <strong>v{updateInfo.latest_version}</strong> is available!</span>
                   : <span>{updateInfo.release_notes}</span>
                 }
               </div>
@@ -250,7 +250,7 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Application</span><span className="font-medium">SystemPro</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Application</span><span className="font-medium">SABI</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Version</span><span className="font-medium">1.0.0</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Framework</span><span className="font-medium">Tauri 2.0</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Frontend</span><span className="font-medium">React + ShadCN UI</span></div>

@@ -78,7 +78,7 @@ export default function RegistryDefragPage() {
                     </span>
                   </div>
                   <div className="w-full bg-muted rounded-full h-2 mt-1">
-                    <div className={`h-2 rounded-full transition-all ${h.fragmentation_percent > 10 ? "bg-red-500" : h.fragmentation_percent > 5 ? "bg-amber-500" : "bg-emerald-500"}`}
+                    <div className={`h-2 rounded-full transition-all ${h.fragmentation_percent > 10 ? "bg-red-50 dark:bg-red-500/100" : h.fragmentation_percent > 5 ? "bg-amber-50 dark:bg-amber-500/100" : "bg-emerald-50 dark:bg-emerald-500/100"}`}
                       style={{ width: `${Math.min(h.fragmentation_percent * 5, 100)}%` }} />
                   </div>
                 </div>
@@ -89,9 +89,9 @@ export default function RegistryDefragPage() {
       )}
 
       {defragResult && (
-        <Card className={defragResult.startsWith("Error") ? "border-red-200 bg-red-50/50" : "border-emerald-200 bg-emerald-50/50"}>
+        <Card className={defragResult.startsWith("Error") ? "border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10/50" : "border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10/50"}>
           <CardContent className="p-4 text-center">
-            <p className={`text-sm font-medium ${defragResult.startsWith("Error") ? "text-red-800" : "text-emerald-800"}`}>{defragResult}</p>
+            <p className={`text-sm font-medium ${defragResult.startsWith("Error") ? "text-red-800 dark:text-red-200" : "text-emerald-800 dark:text-emerald-200"}`}>{defragResult}</p>
           </CardContent>
         </Card>
       )}

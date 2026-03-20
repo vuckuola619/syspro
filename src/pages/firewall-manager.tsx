@@ -91,10 +91,10 @@ export default function FirewallManagerPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{rule.display_name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${rule.direction === "Inbound" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${rule.direction === "Inbound" ? "bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300" : "bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300"}`}>
                         {rule.direction}
                       </span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${rule.action === "Allow" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${rule.action === "Allow" ? "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-300"}`}>
                         {rule.action}
                       </span>
                       <span className="text-[10px] text-muted-foreground">{rule.profile}</span>

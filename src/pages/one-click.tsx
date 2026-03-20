@@ -39,9 +39,9 @@ function timestamp() {
 }
 
 function healthLabel(score: number) {
-  if (score >= 85) return { text: "Good", color: "text-emerald-500", bg: "bg-emerald-500" }
-  if (score >= 60) return { text: "Fair", color: "text-amber-500", bg: "bg-amber-500" }
-  return { text: "Poor", color: "text-red-500", bg: "bg-red-500" }
+  if (score >= 85) return { text: "Good", color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-500/100" }
+  if (score >= 60) return { text: "Fair", color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-500/100" }
+  return { text: "Poor", color: "text-red-500", bg: "bg-red-50 dark:bg-red-500/100" }
 }
 
 // ─── Component ───
@@ -388,7 +388,7 @@ export default function OneClickPage() {
   ] : []
 
   const sevColor = (s: string) => s === "high" ? "text-red-500" : s === "medium" ? "text-amber-500" : "text-emerald-500"
-  const sevBg = (s: string) => s === "high" ? "bg-red-500/10 border-red-500/20" : s === "medium" ? "bg-amber-500/10 border-amber-500/20" : "bg-emerald-500/10 border-emerald-500/20"
+  const sevBg = (s: string) => s === "high" ? "bg-red-50 dark:bg-red-500/100/10 border-red-500/20" : s === "medium" ? "bg-amber-50 dark:bg-amber-500/100/10 border-amber-500/20" : "bg-emerald-50 dark:bg-emerald-500/100/10 border-emerald-500/20"
   const sevBadge = (s: string) => s === "high" ? "destructive" : s === "medium" ? "secondary" : "secondary" as const
 
   return (
@@ -440,7 +440,7 @@ export default function OneClickPage() {
               return (
                 <Card key={i} className={`transition-all ${active ? "ring-2 ring-primary shadow-lg" : done ? "opacity-70" : "opacity-30"}`}>
                   <CardContent className="p-2.5 flex flex-col items-center gap-1.5 text-center">
-                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${done ? "bg-emerald-100 dark:bg-emerald-500/20" : active ? "bg-primary/10" : "bg-muted"}`}>
+                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${done ? "bg-emerald-100 dark:bg-emerald-50 dark:bg-emerald-500/100/20" : active ? "bg-primary/10" : "bg-muted"}`}>
                       {done ? <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> :
                        active ? <RefreshCw className="h-4 w-4 animate-spin text-primary" /> :
                        <s.icon className="h-4 w-4 text-muted-foreground" />}
@@ -482,10 +482,10 @@ export default function OneClickPage() {
             {issues.map(issue => {
               const fixed = fixedCategories.has(issue.key)
               return (
-                <Card key={issue.key} className={fixed ? "border-emerald-500/20 bg-emerald-500/5" : sevBg(issue.severity)}>
+                <Card key={issue.key} className={fixed ? "border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/100/5" : sevBg(issue.severity)}>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${fixed ? "bg-emerald-100 dark:bg-emerald-500/20" : "bg-background"}`}>
+                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${fixed ? "bg-emerald-100 dark:bg-emerald-50 dark:bg-emerald-500/100/20" : "bg-background"}`}>
                         {fixed ? <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" /> :
                          <issue.icon className={`h-5 w-5 ${sevColor(issue.severity)}`} />}
                       </div>
@@ -493,7 +493,7 @@ export default function OneClickPage() {
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium">{issue.label}</p>
                           {fixed ? (
-                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 text-[10px]">Fixed</Badge>
+                            <Badge className="bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:bg-emerald-50 dark:bg-emerald-500/100/20 dark:text-emerald-400 text-[10px]">Fixed</Badge>
                           ) : (
                             <Badge variant={sevBadge(issue.severity)} className="text-[10px]">
                               {issue.severity === "high" ? "Action Needed" : issue.severity === "medium" ? "Moderate" : "OK"}
@@ -532,10 +532,10 @@ export default function OneClickPage() {
             {diagnostic.diskHealth.map((d, i) => {
               const hl = healthLabel(d.health_percent)
               return (
-                <Card key={`disk-${i}`} className={d.health_percent < 60 ? "border-red-500/20 bg-red-500/5" : "border-emerald-500/20 bg-emerald-500/5"}>
+                <Card key={`disk-${i}`} className={d.health_percent < 60 ? "border-red-500/20 bg-red-50 dark:bg-red-500/100/5" : "border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/100/5"}>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${d.health_percent < 60 ? "bg-red-100 dark:bg-red-500/20" : "bg-emerald-100 dark:bg-emerald-500/20"}`}>
+                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${d.health_percent < 60 ? "bg-red-100 dark:bg-red-50 dark:bg-red-500/100/20" : "bg-emerald-100 dark:bg-emerald-50 dark:bg-emerald-500/100/20"}`}>
                         <HardDrive className={`h-5 w-5 ${hl.color}`} />
                       </div>
                       <div className="flex-1">
@@ -559,10 +559,10 @@ export default function OneClickPage() {
             })}
 
             {/* Startup info card */}
-            <Card className={diagnostic.startup.enabledCount > 10 ? "border-amber-500/20 bg-amber-500/5" : "border-emerald-500/20 bg-emerald-500/5"}>
+            <Card className={diagnostic.startup.enabledCount > 10 ? "border-amber-500/20 bg-amber-50 dark:bg-amber-500/100/5" : "border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/100/5"}>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${diagnostic.startup.enabledCount > 10 ? "bg-amber-100 dark:bg-amber-500/20" : "bg-emerald-100 dark:bg-emerald-500/20"}`}>
+                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${diagnostic.startup.enabledCount > 10 ? "bg-amber-100 dark:bg-amber-50 dark:bg-amber-500/100/20" : "bg-emerald-100 dark:bg-emerald-50 dark:bg-emerald-500/100/20"}`}>
                     <Rocket className={`h-5 w-5 ${diagnostic.startup.enabledCount > 10 ? "text-amber-500" : "text-emerald-500"}`} />
                   </div>
                   <div className="flex-1">

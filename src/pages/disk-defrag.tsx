@@ -49,9 +49,9 @@ export default function DiskDefragPage() {
   }
 
   function barColor(pct: number) {
-    if (pct <= 5) return "bg-emerald-500"
-    if (pct <= 15) return "bg-amber-500"
-    return "bg-red-500"
+    if (pct <= 5) return "bg-emerald-50 dark:bg-emerald-500/100"
+    if (pct <= 15) return "bg-amber-50 dark:bg-amber-500/100"
+    return "bg-red-50 dark:bg-red-500/100"
   }
 
   return (
@@ -73,7 +73,7 @@ export default function DiskDefragPage() {
                     <span className="font-semibold text-lg">{drive}</span>
                   </div>
                   {result && (
-                    <Badge variant="secondary" className={`${result.status === "Optimal" ? "bg-emerald-50 text-emerald-700" : result.status === "Moderate" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"}`}>
+                    <Badge variant="secondary" className={`${result.status === "Optimal" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : result.status === "Moderate" ? "bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300" : "bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300"}`}>
                       {result.status}
                     </Badge>
                   )}
@@ -101,7 +101,7 @@ export default function DiskDefragPage() {
                     </Button>
                   )}
                   {result && result.fragmented_percent <= 5 && (
-                    <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 gap-1 flex items-center">
+                    <Badge variant="secondary" className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 gap-1 flex items-center">
                       <CheckCircle2 className="h-3 w-3" /> OK
                     </Badge>
                   )}

@@ -30,7 +30,7 @@ export default function RestorePointsPage() {
     setIsCreating(true)
     setResult("")
     try {
-      const description = desc || `SystemPro Backup ${new Date().toLocaleDateString()}`
+      const description = desc || `SABI Backup ${new Date().toLocaleDateString()}`
       const msg = await invoke<string>("create_restore_point", { description })
       setResult(msg)
       setCustomDesc("")
@@ -95,9 +95,9 @@ export default function RestorePointsPage() {
       )}
 
       {result && (
-        <Card className={result.toLowerCase().includes("fail") || result.toLowerCase().includes("error") ? "border-red-200 bg-red-50/50" : "border-emerald-200 bg-emerald-50/50"}>
+        <Card className={result.toLowerCase().includes("fail") || result.toLowerCase().includes("error") ? "border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10/50" : "border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10/50"}>
           <CardContent className="p-3">
-            <p className={`text-sm font-medium ${result.toLowerCase().includes("fail") || result.toLowerCase().includes("error") ? "text-red-800" : "text-emerald-800"}`}>{result}</p>
+            <p className={`text-sm font-medium ${result.toLowerCase().includes("fail") || result.toLowerCase().includes("error") ? "text-red-800 dark:text-red-200" : "text-emerald-800 dark:text-emerald-200"}`}>{result}</p>
           </CardContent>
         </Card>
       )}
@@ -113,7 +113,7 @@ export default function RestorePointsPage() {
         {points.map(p => (
           <Card key={p.sequence_number} className="hover:bg-accent/30 transition-colors">
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center shrink-0">
                 <Clock className="h-5 w-5 text-blue-600" />
               </div>
               <div className="flex-1 min-w-0">
@@ -128,17 +128,17 @@ export default function RestorePointsPage() {
       </div>
 
       {/* System Protection settings link */}
-      <Card className="border-blue-200 bg-blue-50/50">
+      <Card className="border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10/50">
         <CardContent className="p-4 flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-blue-800">System Protection Settings</p>
+            <p className="text-xs font-medium text-blue-800 dark:text-blue-200">System Protection Settings</p>
             <p className="text-[11px] text-blue-600 mt-0.5">Configure restore point disk usage, enable/disable protection on drives</p>
           </div>
           <Button variant="outline" size="sm" className="gap-1.5 text-xs shrink-0" onClick={() => {
             setResult("Opening System Protection settings...")
             invoke("open_system_protection").catch(() => {
               // If command doesn't exist yet, user can open manually
-              setResult("Open manually: Run → SystemPropertiesProtection.exe")
+              setResult("Open manually: Run → SABIpertiesProtection.exe")
             })
           }}>
             <Settings className="h-3.5 w-3.5" /> Open Settings

@@ -73,7 +73,7 @@ export default function SystemSlimmingPage() {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium">{t.name}</p>
                       {!t.safe && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium flex items-center gap-1">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 font-medium flex items-center gap-1">
                           <AlertTriangle className="h-3 w-3" /> Caution
                         </span>
                       )}

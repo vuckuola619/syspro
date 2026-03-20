@@ -40,10 +40,10 @@ export default function PasswordGeneratorPage() {
     }
   }
 
-  const strengthColor = result?.strength === "Very Strong" ? "text-emerald-600 bg-emerald-100"
-    : result?.strength === "Strong" ? "text-blue-600 bg-blue-100"
-    : result?.strength === "Medium" ? "text-amber-600 bg-amber-100"
-    : "text-red-600 bg-red-100"
+  const strengthColor = result?.strength === "Very Strong" ? "text-emerald-600 bg-emerald-100 dark:bg-emerald-500/15"
+    : result?.strength === "Strong" ? "text-blue-600 bg-blue-100 dark:bg-blue-500/15"
+    : result?.strength === "Medium" ? "text-amber-600 bg-amber-100 dark:bg-amber-500/15"
+    : "text-red-600 bg-red-100 dark:bg-red-500/15"
 
   return (
     <div className="space-y-6">

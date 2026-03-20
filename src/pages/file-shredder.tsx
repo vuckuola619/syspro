@@ -47,12 +47,12 @@ export default function FileShredderPage() {
         <p className="text-sm text-muted-foreground mt-1">Securely delete files so they cannot be recovered</p>
       </div>
 
-      <Card className="border-amber-200 bg-amber-50/50">
+      <Card className="border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10/50">
         <CardContent className="flex items-start gap-3 p-4">
           <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-amber-900">Files shredded cannot be recovered</p>
-            <p className="text-xs text-amber-700 mt-0.5">This operation overwrites file data multiple times using DoD 5220.22-M standard, making recovery impossible.</p>
+            <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Files shredded cannot be recovered</p>
+            <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">This operation overwrites file data multiple times using DoD 5220.22-M standard, making recovery impossible.</p>
           </div>
         </CardContent>
       </Card>
@@ -90,9 +90,9 @@ export default function FileShredderPage() {
       )}
 
       {done && (
-        <Card className="border-emerald-200 bg-emerald-50/50">
+        <Card className="border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10/50">
           <CardContent className="p-4 text-center">
-            <p className="text-sm font-medium text-emerald-800">All files have been securely shredded</p>
+            <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">All files have been securely shredded</p>
           </CardContent>
         </Card>
       )}

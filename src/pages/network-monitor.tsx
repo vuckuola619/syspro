@@ -48,8 +48,8 @@ export default function NetworkMonitorPage() {
         <div className="flex gap-3 items-center">
           <Search className="h-4 w-4 text-muted-foreground" />
           <Input placeholder="Filter by process, address, port..." value={search} onChange={e => setSearch(e.target.value)} className="max-w-sm" />
-          <Badge variant="secondary" className="bg-emerald-50 text-emerald-700">Established: {established}</Badge>
-          <Badge variant="secondary" className="bg-blue-50 text-blue-700">Listening: {listening}</Badge>
+          <Badge variant="secondary" className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">Established: {established}</Badge>
+          <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300">Listening: {listening}</Badge>
         </div>
       )}
 
@@ -57,7 +57,7 @@ export default function NetworkMonitorPage() {
         {filtered.map((c, i) => (
           <Card key={i}>
             <CardContent className="p-2.5 flex items-center gap-3 text-xs">
-              <div className={`h-2 w-2 rounded-full ${c.state === "Established" ? "bg-emerald-500" : "bg-blue-500"}`} />
+              <div className={`h-2 w-2 rounded-full ${c.state === "Established" ? "bg-emerald-50 dark:bg-emerald-500/100" : "bg-blue-50 dark:bg-blue-500/100"}`} />
               <span className="font-semibold w-32 truncate">{c.process_name}</span>
               <span className="text-muted-foreground w-8 text-right">{c.pid}</span>
               <span className="flex-1 font-mono truncate">{c.local_address}:{c.local_port}</span>

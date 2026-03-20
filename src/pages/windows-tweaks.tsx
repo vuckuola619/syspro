@@ -61,7 +61,7 @@ export default function WindowsTweaksPage() {
                     <p className="text-xs text-muted-foreground">{t.description}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {t.enabled && <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 text-[10px]">Active</Badge>}
+                    {t.enabled && <Badge variant="secondary" className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[10px]">Active</Badge>}
                     <Switch checked={t.enabled} onCheckedChange={(v) => toggle(t.id, v)} disabled={applying === t.id} />
                   </div>
                 </CardContent>
@@ -71,8 +71,8 @@ export default function WindowsTweaksPage() {
         </div>
       ))}
 
-      <Card className="bg-amber-50 border-amber-200">
-        <CardContent className="p-3 text-xs text-amber-800">
+      <Card className="bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30">
+        <CardContent className="p-3 text-xs text-amber-800 dark:text-amber-200">
           <strong>Note:</strong> Some tweaks require restarting Explorer or signing out to take effect.
         </CardContent>
       </Card>

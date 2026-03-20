@@ -76,7 +76,7 @@ export default function FileHiderPage() {
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-lg bg-purple-100"><EyeOff className="h-5 w-5 text-purple-600" /></div>
+              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-500/15"><EyeOff className="h-5 w-5 text-purple-600" /></div>
               <div>
                 <p className="text-sm font-medium">Encrypt File / Hide Folder</p>
                 <p className="text-xs text-muted-foreground">File → encrypted .locked | Folder → hidden attribute</p>
@@ -96,7 +96,7 @@ export default function FileHiderPage() {
                 Encrypt & Lock
               </Button>
               {hideResult && (
-                <div className={`text-xs p-2 rounded ${hideResult.startsWith("Error") ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"}`}>
+                <div className={`text-xs p-2 rounded ${hideResult.startsWith("Error") ? "bg-red-50 dark:bg-red-500/10 text-red-600" : "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"}`}>
                   <p className="font-medium">{hideResult}</p>
                   {!hideResult.startsWith("Error") && <p className="mt-0.5 text-emerald-600">The .locked file is in the same folder as the original.</p>}
                 </div>
@@ -108,7 +108,7 @@ export default function FileHiderPage() {
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-lg bg-emerald-100"><Eye className="h-5 w-5 text-emerald-600" /></div>
+              <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/15"><Eye className="h-5 w-5 text-emerald-600" /></div>
               <div>
                 <p className="text-sm font-medium">Decrypt / Unhide</p>
                 <p className="text-xs text-muted-foreground">Restore .locked files or unhide folders</p>
@@ -153,9 +153,9 @@ export default function FileHiderPage() {
         </Card>
       )}
 
-      <Card className="border-blue-200 bg-blue-50/50">
+      <Card className="border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10/50">
         <CardContent className="p-4">
-          <p className="text-xs text-blue-800"><span className="font-medium">How it works:</span> Files are XOR-encrypted with a SHA-256 key derived from your password and saved with a <code className="bg-blue-100 px-1 rounded">.locked</code> extension in the same folder. The encrypted file stays visible in Explorer so you can find it to decrypt later. Remember your password — it is not stored anywhere.</p>
+          <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">How it works:</span> Files are XOR-encrypted with a SHA-256 key derived from your password and saved with a <code className="bg-blue-100 dark:bg-blue-500/15 px-1 rounded">.locked</code> extension in the same folder. The encrypted file stays visible in Explorer so you can find it to decrypt later. Remember your password — it is not stored anywhere.</p>
         </CardContent>
       </Card>
     </div>

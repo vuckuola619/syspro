@@ -58,24 +58,24 @@ export default function SpeedTestPage() {
 
       {result && !testing && (
         <div className="grid grid-cols-3 gap-4">
-          <Card className="bg-emerald-50/50 border-emerald-200">
+          <Card className="bg-emerald-50 dark:bg-emerald-500/10/50 border-emerald-200 dark:border-emerald-500/30">
             <CardContent className="p-6 text-center">
               <ArrowDown className="h-8 w-8 mx-auto text-emerald-600 mb-2" />
-              <p className="text-3xl font-bold text-emerald-700">{result.download_mbps}</p>
+              <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">{result.download_mbps}</p>
               <p className="text-sm text-emerald-600/80">Mbps Download</p>
             </CardContent>
           </Card>
-          <Card className="bg-blue-50/50 border-blue-200">
+          <Card className="bg-blue-50 dark:bg-blue-500/10/50 border-blue-200 dark:border-blue-500/30">
             <CardContent className="p-6 text-center">
               <ArrowUp className="h-8 w-8 mx-auto text-blue-600 mb-2" />
-              <p className="text-3xl font-bold text-blue-700">{result.upload_mbps}</p>
+              <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{result.upload_mbps}</p>
               <p className="text-sm text-blue-600/80">Mbps Upload</p>
             </CardContent>
           </Card>
-          <Card className="bg-purple-50/50 border-purple-200">
+          <Card className="bg-purple-50 dark:bg-purple-500/10/50 border-purple-200 dark:border-purple-500/30">
             <CardContent className="p-6 text-center">
               <Clock className="h-8 w-8 mx-auto text-purple-600 mb-2" />
-              <p className="text-3xl font-bold text-purple-700">{result.latency_ms}</p>
+              <p className="text-3xl font-bold text-purple-700 dark:text-purple-300">{result.latency_ms}</p>
               <p className="text-sm text-purple-600/80">ms Latency</p>
             </CardContent>
           </Card>

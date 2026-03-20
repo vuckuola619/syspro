@@ -108,7 +108,7 @@ export default function LiveMonitorPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-500/10">
                   <Cpu className="h-4 w-4 text-blue-600" />
                 </div>
                 <CardTitle className="text-sm font-medium">CPU Usage</CardTitle>
@@ -127,7 +127,7 @@ export default function LiveMonitorPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 dark:bg-violet-500/10">
                   <MemoryStick className="h-4 w-4 text-violet-600" />
                 </div>
                 <CardTitle className="text-sm font-medium">Memory Usage</CardTitle>
@@ -149,7 +149,7 @@ export default function LiveMonitorPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/10">
                   <Wifi className="h-4 w-4 text-emerald-600" />
                 </div>
                 <CardTitle className="text-sm font-medium">Network ↓ Download</CardTitle>
@@ -166,7 +166,7 @@ export default function LiveMonitorPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-500/10">
                   <TrendingUp className="h-4 w-4 text-amber-600" />
                 </div>
                 <CardTitle className="text-sm font-medium">Network ↑ Upload</CardTitle>
@@ -184,7 +184,7 @@ export default function LiveMonitorPage() {
       <div className="grid grid-cols-4 gap-4">
         <Card>
           <CardContent className="flex items-center gap-3 p-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-500/10">
               <Activity className="h-5 w-5 text-blue-600" />
             </div>
             <div>
@@ -195,7 +195,7 @@ export default function LiveMonitorPage() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 p-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/10">
               <Wifi className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
@@ -206,7 +206,7 @@ export default function LiveMonitorPage() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 p-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-500/10">
               <TrendingUp className="h-5 w-5 text-amber-600" />
             </div>
             <div>
@@ -217,7 +217,7 @@ export default function LiveMonitorPage() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 p-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50 dark:bg-violet-500/10">
               <HardDrive className="h-5 w-5 text-violet-600" />
             </div>
             <div>
@@ -233,11 +233,11 @@ export default function LiveMonitorPage() {
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Badge variant="secondary" className="bg-blue-50 text-blue-700">Top CPU</Badge>
+              <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300">Top CPU</Badge>
               <span className="text-sm font-medium">{stats?.top_cpu_process ?? "Scanning..."}</span>
             </div>
             <div className="flex items-center gap-3">
-              <Badge variant="secondary" className="bg-violet-50 text-violet-700">Top RAM</Badge>
+              <Badge variant="secondary" className="bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300">Top RAM</Badge>
               <span className="text-sm font-medium">{stats?.top_ram_process ?? "Scanning..."}</span>
             </div>
           </div>

@@ -63,7 +63,7 @@ export default function DriverUpdaterPage() {
       {!hasScanned ? (
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-500/10">
               <MonitorCog className="h-6 w-6 text-blue-600" />
             </div>
             <div className="flex-1">
@@ -124,7 +124,7 @@ export default function DriverUpdaterPage() {
                       </div>
                       <p className="text-xs text-muted-foreground">{drv.device} · {drv.current_version}</p>
                     </div>
-                    <Badge variant="secondary" className="bg-emerald-50 text-emerald-700">Current</Badge>
+                    <Badge variant="secondary" className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">Current</Badge>
                   </CardContent>
                 </Card>
               ))}

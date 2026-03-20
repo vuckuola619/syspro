@@ -59,7 +59,7 @@ export default function TurboBoostPage() {
 
       <Card className={active ? "border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50" : ""}>
         <CardContent className="p-8 text-center">
-          <div className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center ${active ? "bg-amber-100 ring-4 ring-amber-200" : "bg-muted"}`}>
+          <div className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center ${active ? "bg-amber-100 dark:bg-amber-500/15 ring-4 ring-amber-200" : "bg-muted"}`}>
             <Zap className={`h-10 w-10 ${active ? "text-amber-600" : "text-muted-foreground"}`} />
           </div>
           <h2 className="text-xl font-bold mt-4">{active ? "Turbo Mode Active" : "Turbo Mode Off"}</h2>
@@ -88,7 +88,7 @@ export default function TurboBoostPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-2 rounded-lg bg-blue-100"><Server className="h-5 w-5 text-blue-600" /></div>
+              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-500/15"><Server className="h-5 w-5 text-blue-600" /></div>
               <div>
                 <p className="text-2xl font-bold">{result.services_stopped}</p>
                 <p className="text-xs text-muted-foreground">Services Stopped</p>
@@ -97,7 +97,7 @@ export default function TurboBoostPage() {
           </Card>
           <Card>
             <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-2 rounded-lg bg-emerald-100"><MemoryStick className="h-5 w-5 text-emerald-600" /></div>
+              <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/15"><MemoryStick className="h-5 w-5 text-emerald-600" /></div>
               <div>
                 <p className="text-2xl font-bold">{result.memory_freed_mb} MB</p>
                 <p className="text-xs text-muted-foreground">Memory Freed</p>
@@ -106,7 +106,7 @@ export default function TurboBoostPage() {
           </Card>
           <Card>
             <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-2 rounded-lg bg-purple-100"><Gauge className="h-5 w-5 text-purple-600" /></div>
+              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-500/15"><Gauge className="h-5 w-5 text-purple-600" /></div>
               <div>
                 <p className="text-2xl font-bold">{result.processes_optimized}</p>
                 <p className="text-xs text-muted-foreground">Processes Optimized</p>
@@ -116,9 +116,9 @@ export default function TurboBoostPage() {
         </div>
       )}
 
-      <Card className="border-amber-200 bg-amber-50/50">
+      <Card className="border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10/50">
         <CardContent className="p-4">
-          <p className="text-xs text-amber-800"><span className="font-medium">Note:</span> Turbo Mode stops services like SysMain, Windows Search, DiagTrack, etc. These will be restored when you deactivate or restart your PC.</p>
+          <p className="text-xs text-amber-800 dark:text-amber-200"><span className="font-medium">Note:</span> Turbo Mode stops services like SysMain, Windows Search, DiagTrack, etc. These will be restored when you deactivate or restart your PC.</p>
         </CardContent>
       </Card>
     </div>

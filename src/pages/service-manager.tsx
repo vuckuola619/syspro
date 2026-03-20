@@ -66,12 +66,12 @@ export default function ServiceManagerPage() {
         {filtered.slice(0, 100).map(s => (
           <Card key={s.name}>
             <CardContent className="p-2.5 flex items-center gap-3">
-              <div className={`h-2 w-2 rounded-full ${s.status === "Running" ? "bg-emerald-500" : s.status === "Stopped" ? "bg-red-400" : "bg-amber-400"}`} />
+              <div className={`h-2 w-2 rounded-full ${s.status === "Running" ? "bg-emerald-50 dark:bg-emerald-500/100" : s.status === "Stopped" ? "bg-red-400" : "bg-amber-400"}`} />
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-xs truncate">{s.display_name}</p>
                 <p className="text-[10px] text-muted-foreground">{s.name} · {s.start_type}</p>
               </div>
-              <Badge variant="secondary" className={`text-[10px] ${s.status === "Running" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100"}`}>
+              <Badge variant="secondary" className={`text-[10px] ${s.status === "Running" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-slate-100 dark:bg-slate-500/15"}`}>
                 {s.status}
               </Badge>
               <div className="flex gap-1">

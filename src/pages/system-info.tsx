@@ -164,7 +164,7 @@ export default function SystemInfoPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-500/10">
                   <Cpu className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
@@ -190,7 +190,7 @@ export default function SystemInfoPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50 dark:bg-violet-500/10">
                   <MemoryStick className="h-5 w-5 text-violet-600" />
                 </div>
                 <CardTitle className="text-base">Memory</CardTitle>
@@ -217,7 +217,7 @@ export default function SystemInfoPage() {
               <Card key={i}>
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/10">
                       <HardDrive className="h-5 w-5 text-emerald-600" />
                     </div>
                     <div className="flex-1">
@@ -250,7 +250,7 @@ export default function SystemInfoPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-500/10">
                   <Monitor className="h-5 w-5 text-orange-600" />
                 </div>
                 <CardTitle className="text-base">Operating System</CardTitle>
@@ -285,7 +285,7 @@ export default function SystemInfoPage() {
                 <Card key={i}>
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-50">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-50 dark:bg-cyan-500/10">
                         <Wifi className="h-5 w-5 text-cyan-600" />
                       </div>
                       <CardTitle className="text-base">{net.name}</CardTitle>

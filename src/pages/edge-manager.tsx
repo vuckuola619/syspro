@@ -48,7 +48,7 @@ export default function EdgeManagerPage() {
           <Card key={s.id}>
             <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-lg bg-blue-50 flex items-center justify-center">
+                <div className="h-9 w-9 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
                   <Globe className="h-4.5 w-4.5 text-blue-600" />
                 </div>
                 <div>
@@ -62,8 +62,8 @@ export default function EdgeManagerPage() {
         ))}
       </div>
 
-      <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="p-3 text-xs text-blue-800">
+      <Card className="bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30">
+        <CardContent className="p-3 text-xs text-blue-800 dark:text-blue-200">
           <strong>Note:</strong> Changes are applied via Group Policy registry keys. Restart Edge for changes to take effect.
         </CardContent>
       </Card>

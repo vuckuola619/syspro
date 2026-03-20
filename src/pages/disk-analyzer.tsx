@@ -95,7 +95,7 @@ export default function DiskAnalyzerPage() {
 
       <Card>
         <CardContent className="flex items-center gap-4 p-6">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-500/10">
             {isScanning ? <RefreshCw className="h-6 w-6 text-blue-600 animate-spin" /> : <HardDrive className="h-6 w-6 text-blue-600" />}
           </div>
           <div className="flex-1">

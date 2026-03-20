@@ -75,7 +75,7 @@ export function TitleBar() {
         </button>
         <button
           onClick={close}
-          className="inline-flex items-center justify-center w-12 h-full hover:bg-red-500 hover:text-white transition-colors group"
+          className="inline-flex items-center justify-center w-12 h-full hover:bg-red-50 dark:bg-red-500/100 hover:text-white transition-colors group"
           aria-label="Close"
         >
           <X className="h-3.5 w-3.5 text-muted-foreground group-hover:text-white" />

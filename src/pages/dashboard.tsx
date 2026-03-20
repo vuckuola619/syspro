@@ -86,7 +86,7 @@ function ScoreRing({ score }: { score: number }) {
   return (
     <div className="relative flex h-36 w-36 items-center justify-center">
       <svg className="h-36 w-36 -rotate-90" viewBox="0 0 128 128">
-        <circle cx="64" cy="64" r="58" fill="none" stroke="hsl(220, 14%, 96%)" strokeWidth="8" />
+        <circle cx="64" cy="64" r="58" fill="none" className="stroke-muted" strokeWidth="8" />
         <circle cx="64" cy="64" r="58" fill="none" stroke={color} strokeWidth="8"
           strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
           className="transition-all duration-1000 ease-out" />
@@ -218,7 +218,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-500/10">
                 <Cpu className="h-4 w-4 text-blue-600" />
               </div>
               <div>
@@ -233,7 +233,7 @@ export default function DashboardPage() {
                 <span className="text-muted-foreground">Usage</span>
                 <span className="font-medium">{overview?.cpu_usage.toFixed(1) || 0}%</span>
               </div>
-              <Progress value={overview?.cpu_usage || 0} indicatorClassName={(overview?.cpu_usage || 0) > 80 ? "bg-red-500" : "bg-blue-500"} />
+              <Progress value={overview?.cpu_usage || 0} indicatorClassName={(overview?.cpu_usage || 0) > 80 ? "bg-red-50 dark:bg-red-500/100" : "bg-blue-50 dark:bg-blue-500/100"} />
             </div>
           </CardContent>
         </Card>
@@ -241,7 +241,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 dark:bg-violet-500/10">
                 <MemoryStick className="h-4 w-4 text-violet-600" />
               </div>
               <div>
@@ -256,7 +256,7 @@ export default function DashboardPage() {
                 <span className="text-muted-foreground">Usage</span>
                 <span className="font-medium">{ramPercent.toFixed(1)}%</span>
               </div>
-              <Progress value={ramPercent} indicatorClassName={ramPercent > 85 ? "bg-red-500" : "bg-violet-500"} />
+              <Progress value={ramPercent} indicatorClassName={ramPercent > 85 ? "bg-red-50 dark:bg-red-500/100" : "bg-violet-50 dark:bg-violet-500/100"} />
             </div>
           </CardContent>
         </Card>
@@ -264,7 +264,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/10">
                 <HardDrive className="h-4 w-4 text-emerald-600" />
               </div>
               <div>
@@ -281,7 +281,7 @@ export default function DashboardPage() {
                     <span className="text-muted-foreground">{disk.mount_point} ({disk.fs_type})</span>
                     <span className="font-medium">{disk.free_gb.toFixed(1)} GB free</span>
                   </div>
-                  <Progress value={disk.usage_percent} className="h-2" indicatorClassName={disk.usage_percent > 90 ? "bg-red-500" : "bg-emerald-500"} />
+                  <Progress value={disk.usage_percent} className="h-2" indicatorClassName={disk.usage_percent > 90 ? "bg-red-50 dark:bg-red-500/100" : "bg-emerald-50 dark:bg-emerald-500/100"} />
                 </div>
               ))}
             </div>
@@ -291,7 +291,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-500/10">
                 <Wifi className="h-4 w-4 text-amber-600" />
               </div>
               <div>
@@ -327,7 +327,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-4 gap-4">
               {junkResult.categories.map(cat => (
                 <div key={cat.id} className="flex items-center gap-3 p-3 rounded-lg border">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 dark:bg-red-500/10">
                     <Trash2 className="h-4 w-4 text-red-500" />
                   </div>
                   <div>
@@ -391,7 +391,7 @@ function QuickStat({ icon, label, value, sub, status, href }: {
 }) {
   const inner = (
     <div className="flex items-center gap-2">
-      <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${status === "good" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}>
+      <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${status === "good" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600" : "bg-amber-50 dark:bg-amber-500/10 text-amber-600"}`}>
         {icon}
       </div>
       <div>

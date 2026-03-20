@@ -57,7 +57,7 @@ export default function BenchmarksPage() {
             <Card>
               <CardContent className="p-5">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-lg bg-blue-100"><Cpu className="h-5 w-5 text-blue-600" /></div>
+                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-500/15"><Cpu className="h-5 w-5 text-blue-600" /></div>
                   <div>
                     <p className="text-sm font-medium">CPU</p>
                     <p className="text-xs text-muted-foreground">Prime Number Test</p>
@@ -75,7 +75,7 @@ export default function BenchmarksPage() {
             <Card>
               <CardContent className="p-5">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-lg bg-amber-100"><HardDrive className="h-5 w-5 text-amber-600" /></div>
+                  <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-500/15"><HardDrive className="h-5 w-5 text-amber-600" /></div>
                   <div>
                     <p className="text-sm font-medium">Disk</p>
                     <p className="text-xs text-muted-foreground">64 MB Sequential I/O</p>
@@ -97,7 +97,7 @@ export default function BenchmarksPage() {
             <Card>
               <CardContent className="p-5">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-lg bg-emerald-100"><MemoryStick className="h-5 w-5 text-emerald-600" /></div>
+                  <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/15"><MemoryStick className="h-5 w-5 text-emerald-600" /></div>
                   <div>
                     <p className="text-sm font-medium">Memory</p>
                     <p className="text-xs text-muted-foreground">256 MB Copy Test</p>

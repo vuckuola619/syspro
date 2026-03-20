@@ -24,7 +24,7 @@ export default function ExportReportPage() {
   async function saveToFile() {
     try {
       const path = await save({
-        defaultPath: `SystemPro_Report_${new Date().toISOString().slice(0, 10)}.txt`,
+        defaultPath: `SABI_Report_${new Date().toISOString().slice(0, 10)}.txt`,
         filters: [{ name: "Text", extensions: ["txt"] }],
       })
       if (path) {
@@ -77,10 +77,10 @@ export default function ExportReportPage() {
           </div>
 
           {saved && (
-            <Card className="border-emerald-200 bg-emerald-50/30">
+            <Card className="border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10/30">
               <CardContent className="flex items-center gap-2 p-3">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                <p className="text-sm text-emerald-800">Saved to: {saved}</p>
+                <p className="text-sm text-emerald-800 dark:text-emerald-200">Saved to: {saved}</p>
               </CardContent>
             </Card>
           )}

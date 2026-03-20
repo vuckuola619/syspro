@@ -106,7 +106,7 @@ export default function AppUninstallerPage() {
       {!hasLoaded ? (
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-500/10">
               {isLoading ? <RefreshCw className="h-6 w-6 text-blue-600 animate-spin" /> : <Package className="h-6 w-6 text-blue-600" />}
             </div>
             <div className="flex-1">
@@ -138,19 +138,19 @@ export default function AppUninstallerPage() {
 
           {/* Leftover Scanner Result */}
           {leftovers && (
-            <Card className={cleanedLeftovers ? "border-emerald-200 bg-emerald-50/30" : "border-amber-200 bg-amber-50/30"}>
+            <Card className={cleanedLeftovers ? "border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10/30" : "border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10/30"}>
               <CardContent className="p-4">
                 {cleanedLeftovers ? (
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <p className="text-sm font-medium text-emerald-800">Leftovers cleaned for {leftovers.app_name}</p>
+                    <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">Leftovers cleaned for {leftovers.app_name}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <AlertTriangle className="h-5 w-5 text-amber-600" />
-                        <p className="text-sm font-medium text-amber-900">
+                        <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
                           Found {leftovers.leftover_files.length} leftover files
                           {leftovers.leftover_registry.length > 0 && ` + ${leftovers.leftover_registry.length} registry entries`}
                           {leftovers.total_size_mb > 0 && ` (${leftovers.total_size_mb} MB)`}
@@ -161,12 +161,12 @@ export default function AppUninstallerPage() {
                       </Button>
                     </div>
                     {leftovers.leftover_files.length > 0 && (
-                      <div className="max-h-32 overflow-auto rounded bg-white/50 p-2 text-xs font-mono text-muted-foreground space-y-0.5">
+                      <div className="max-h-32 overflow-auto rounded bg-white/50 dark:bg-zinc-800/50 p-2 text-xs font-mono text-muted-foreground space-y-0.5">
                         {leftovers.leftover_files.slice(0, 15).map((f, i) => (
                           <p key={i} className="truncate">{f}</p>
                         ))}
                         {leftovers.leftover_files.length > 15 && (
-                          <p className="text-amber-700">... and {leftovers.leftover_files.length - 15} more</p>
+                          <p className="text-amber-700 dark:text-amber-300">... and {leftovers.leftover_files.length - 15} more</p>
                         )}
                       </div>
                     )}
@@ -209,7 +209,7 @@ export default function AppUninstallerPage() {
                         variant="outline"
                         onClick={() => handleUninstall(app)}
                         disabled={uninstallingApp === app.name}
-                        className="gap-1 text-xs h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="gap-1 text-xs h-7 px-2 text-red-600 hover:text-red-700 dark:text-red-300 hover:bg-red-50 dark:bg-red-500/10"
                       >
                         {uninstallingApp === app.name ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
                         Uninstall

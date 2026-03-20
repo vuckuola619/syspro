@@ -82,7 +82,7 @@ export default function SoftwareUpdaterPage() {
       {!hasScanned ? (
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-500/10">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-50 dark:bg-blue-500/100/10">
               {isScanning ? <RefreshCw className="h-6 w-6 text-blue-600 dark:text-blue-400 animate-spin" /> : <Download className="h-6 w-6 text-blue-600 dark:text-blue-400" />}
             </div>
             <div className="flex-1">
@@ -98,7 +98,7 @@ export default function SoftwareUpdaterPage() {
         <>
           <Card>
             <CardContent className="flex items-center gap-4 p-6">
-              <div className={`flex h-12 w-12 items-center justify-center rounded-full ${outdatedCount > 0 ? "bg-amber-50 dark:bg-amber-500/10" : "bg-emerald-50 dark:bg-emerald-500/10"}`}>
+              <div className={`flex h-12 w-12 items-center justify-center rounded-full ${outdatedCount > 0 ? "bg-amber-50 dark:bg-amber-50 dark:bg-amber-500/100/10" : "bg-emerald-50 dark:bg-emerald-50 dark:bg-emerald-500/100/10"}`}>
                 {outdatedCount > 0 
                   ? <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                   : <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
@@ -130,7 +130,7 @@ export default function SoftwareUpdaterPage() {
           </Card>
 
           {updateResults._all && (
-            <Card className="border-blue-200 bg-blue-50/30 dark:border-blue-500/30 dark:bg-blue-500/5">
+            <Card className="border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10/30 dark:border-blue-500/30 dark:bg-blue-50 dark:bg-blue-500/100/5">
               <CardContent className="p-3">
                 <p className="text-xs font-mono whitespace-pre-wrap max-h-32 overflow-auto">{updateResults._all}</p>
               </CardContent>
@@ -197,7 +197,7 @@ export default function SoftwareUpdaterPage() {
                       </Button>
                     </div>
                   ) : (
-                    <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0">
+                    <Badge variant="secondary" className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:bg-emerald-50 dark:bg-emerald-500/100/10 dark:text-emerald-400 shrink-0">
                       <CheckCircle2 className="h-3 w-3 mr-1" /> {app.current_version}
                     </Badge>
                   )}

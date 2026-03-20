@@ -171,12 +171,12 @@ export function useI18n() { return useContext(I18nContext) }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() =>
-    (localStorage.getItem("systempro-locale") as Locale) || "en"
+    (localStorage.getItem("SABI-locale") as Locale) || "en"
   )
 
   function setLocale(l: Locale) {
     setLocaleState(l)
-    localStorage.setItem("systempro-locale", l)
+    localStorage.setItem("SABI-locale", l)
   }
 
   function t(key: string): string {

@@ -48,7 +48,7 @@ export default function DiskHealthPage() {
           <CardContent className="p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${d.health_percent > 70 ? "bg-emerald-50" : d.health_percent > 40 ? "bg-amber-50" : "bg-red-50"}`}>
+                <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${d.health_percent > 70 ? "bg-emerald-50 dark:bg-emerald-500/10" : d.health_percent > 40 ? "bg-amber-50 dark:bg-amber-500/10" : "bg-red-50 dark:bg-red-500/10"}`}>
                   <HardDrive className={`h-6 w-6 ${d.health_percent > 70 ? "text-emerald-600" : d.health_percent > 40 ? "text-amber-600" : "text-red-600"}`} />
                 </div>
                 <div>
@@ -82,7 +82,7 @@ export default function DiskHealthPage() {
                   <span className="text-xs text-muted-foreground">{a.name}</span>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium">{a.value}</span>
-                    <div className={`h-2 w-2 rounded-full ${a.status === "OK" ? "bg-emerald-500" : "bg-amber-500"}`} />
+                    <div className={`h-2 w-2 rounded-full ${a.status === "OK" ? "bg-emerald-50 dark:bg-emerald-500/100" : "bg-amber-50 dark:bg-amber-500/100"}`} />
                   </div>
                 </div>
               ))}

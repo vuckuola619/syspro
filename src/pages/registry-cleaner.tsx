@@ -64,9 +64,9 @@ export default function RegistryCleanerPage() {
 
   const selectedCount = issues.filter((i) => i.checked).length
   const severityColors = {
-    high: "bg-red-50 text-red-700 border-red-200",
-    medium: "bg-amber-50 text-amber-700 border-amber-200",
-    low: "bg-blue-50 text-blue-700 border-blue-200",
+    high: "bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/30",
+    medium: "bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30",
+    low: "bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-500/30",
   }
 
   return (
@@ -78,12 +78,12 @@ export default function RegistryCleanerPage() {
         </p>
       </div>
 
-      <Card className="border-amber-200 bg-amber-50/50">
+      <Card className="border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10/50">
         <CardContent className="flex items-start gap-3 p-4">
           <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-amber-900">Proceed with caution</p>
-            <p className="text-xs text-amber-700 mt-0.5">
+            <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Proceed with caution</p>
+            <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
               A backup of registry entries will be created before any changes are made. Registry cleaning is generally safe, but review items before applying fixes.
             </p>
           </div>
@@ -105,7 +105,7 @@ export default function RegistryCleanerPage() {
             </div>
           ) : hasCleaned ? (
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-500/10">
                 <CheckCircle2 className="h-6 w-6 text-emerald-600" />
               </div>
               <div className="flex-1">
@@ -118,7 +118,7 @@ export default function RegistryCleanerPage() {
             </div>
           ) : hasScanned ? (
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-500/10">
                 <Database className="h-6 w-6 text-amber-600" />
               </div>
               <div className="flex-1">
@@ -136,7 +136,7 @@ export default function RegistryCleanerPage() {
             </div>
           ) : (
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-500/10">
                 <Search className="h-6 w-6 text-blue-600" />
               </div>
               <div className="flex-1">

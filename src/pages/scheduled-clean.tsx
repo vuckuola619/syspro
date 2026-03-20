@@ -59,7 +59,7 @@ export default function ScheduledCleanPage() {
               onClick={() => setConfig({ ...config, enabled: !config.enabled })}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${config.enabled ? "bg-primary" : "bg-muted"}`}
             >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${config.enabled ? "translate-x-6" : "translate-x-1"}`} />
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-zinc-900 transition-transform ${config.enabled ? "translate-x-6" : "translate-x-1"}`} />
             </button>
           </div>
 
@@ -119,7 +119,7 @@ export default function ScheduledCleanPage() {
               {isSaving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               {config.enabled ? "Save & Register Task" : "Save & Disable"}
             </Button>
-            {saved && <Badge variant="secondary" className="bg-emerald-50 text-emerald-700">{result}</Badge>}
+            {saved && <Badge variant="secondary" className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">{result}</Badge>}
           </div>
         </CardContent>
       </Card>

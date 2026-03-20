@@ -93,7 +93,7 @@ export default function WindowsDebloaterPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm truncate">{app.name}</span>
-                      <Badge variant="secondary" className={`text-[10px] ${app.category === "safe" ? "bg-emerald-50 text-emerald-700" : app.category === "caution" ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-600"}`}>
+                      <Badge variant="secondary" className={`text-[10px] ${app.category === "safe" ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : app.category === "caution" ? "bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300" : "bg-slate-100 dark:bg-slate-500/15 text-slate-600"}`}>
                         {app.category === "safe" && <ShieldCheck className="h-3 w-3 mr-0.5" />}
                         {app.category === "caution" && <AlertTriangle className="h-3 w-3 mr-0.5" />}
                         {app.category === "keep" && <ShieldAlert className="h-3 w-3 mr-0.5" />}
