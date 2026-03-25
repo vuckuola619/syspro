@@ -21,10 +21,8 @@ import {
   Package,
   Monitor,
   Wifi,
-  Download,
 } from "lucide-react"
 import { NavLink } from "react-router-dom"
-import { toast } from "sonner"
 
 interface SystemOverview {
   cpu_name: string
@@ -158,25 +156,6 @@ export default function DashboardPage() {
       setHasScanned(true)
     } finally {
       setIsScanning(false)
-    }
-  }
-
-  async function exportISOReport() {
-    try {
-      const toastId = toast.loading("Generating ISO 27001 Report...")
-      const report = await invoke<string>("generate_iso27001_report")
-      const blob = new Blob([report], { type: "text/plain" })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `SABI_ISO27001_Audit_${new Date().toISOString().split('T')[0]}.txt`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-      toast.success("Audit report exported successfully", { id: toastId })
-    } catch (e) {
-      toast.error(`Export failed: ${e}`)
     }
   }
 
@@ -367,11 +346,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 gap-4">
         {overview && (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader>
               <CardTitle className="text-base flex items-center gap-2"><Monitor className="h-4 w-4" /> System Information</CardTitle>
-              <Button variant="outline" size="sm" onClick={exportISOReport} className="h-8 gap-1.5 text-xs">
-                <Download className="h-3 w-3" /> ISO 27001 Report
-              </Button>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">

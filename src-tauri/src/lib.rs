@@ -4178,6 +4178,10 @@ struct DiskHealthInfo {
     temperature: String,
     size_gb: f64,
     media_type: String,
+    read_errors: i64,
+    write_errors: i64,
+    power_on_hours: i64,
+    wear: i64,
     health_percent: u32,
     attributes: Vec<SmartAttribute>,
 }
@@ -4326,6 +4330,10 @@ Get-PhysicalDisk | ForEach-Object {
             temperature: e.get("Temperature").and_then(|v| v.as_str()).unwrap_or("N/A").to_string(),
             size_gb: e.get("Size").and_then(|v| v.as_f64()).unwrap_or(0.0),
             media_type: e.get("MediaType").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string(),
+            read_errors,
+            write_errors,
+            power_on_hours,
+            wear,
             health_percent,
             attributes,
         }
@@ -4496,6 +4504,61 @@ fn version_is_newer(current: &str, latest: &str) -> bool {
     false
 }
 
+// ============================================================
+// FEATURE: ISO 27001 Export Report
+// ============================================================
+#[tauri::command]
+async fn generate_iso27001_report() -> Result<String, String> {
+    let script = r#"
+        $out = "==== SABI ISO 27001 AUDIT REPORT ====`r`n"
+        $out += "Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')`r`n`r`n"
+        
+        $out += "--- 1. SYSTEM & OS ---`r`n"
+        $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
+        if ($os) {
+            $out += "Hostname: $($os.CSName)`r`n"
+            $out += "OS Version: $($os.Caption) $($os.Version)`r`n"
+            $out += "Architecture: $($os.OSArchitecture)`r`n"
+        }
+        $out += "`r`n--- 2. ENCRYPTION (BITLOCKER) ---`r`n"
+        try {
+            $bl = Get-BitLockerVolume -ErrorAction SilentlyContinue | Select-Object MountPoint, VolumeStatus, EncryptionPercentage
+            if ($bl) { foreach ($b in $bl) { $out += "$($b.MountPoint) - $($b.VolumeStatus) ($($b.EncryptionPercentage)%)`r`n" } } else { $out += "No BitLocker volumes found or Access Denied.`r`n" }
+        } catch { $out += "BitLocker status unavailable (Run as Admin).`r`n" }
+        
+        $out += "`r`n--- 3. ADMINISTRATORS ---`r`n"
+        try {
+            $admins = Get-LocalGroupMember -Group Administrators -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name
+            if ($admins) { $out += ($admins -join ", ") + "`r`n" } else { $out += "No administrators found.`r`n" }
+        } catch { $out += "Unable to fetch administrators.`r`n" }
+
+        $out += "`r`n--- 4. FIREWALL ---`r`n"
+        try {
+            $fw = Get-NetFirewallProfile -ErrorAction SilentlyContinue | Select-Object Name, Enabled
+            if ($fw) { foreach ($f in $fw) { $out += "$($f.Name): " + (if ($f.Enabled) {"Enabled"} else {"Disabled"}) + "`r`n" } } else { $out += "Firewall status unavailable.`r`n" }
+        } catch { $out += "Firewall status unavailable.`r`n" }
+
+        $out += "`r`n--- 5. ANTIVIRUS ---`r`n"
+        try {
+            $av = Get-CimInstance -Namespace root\SecurityCenter2 -ClassName AntiVirusProduct -ErrorAction SilentlyContinue
+            if ($av) { foreach ($a in $av) { $out += "$($a.displayName)`r`n" } } else { $out += "No 3rd party AV detected (Windows Defender is likely active).`r`n" }
+        } catch { $out += "AV status unavailable.`r`n" }
+
+        $out += "`r`n--- 6. NETWORK ADAPTERS ---`r`n"
+        try {
+            $net = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object Status -eq 'Up'
+            if ($net) { foreach ($n in $net) { $out += "$($n.Name) ($($n.InterfaceDescription)) - MAC: $($n.MacAddress)`r`n" } } else { $out += "No active network adapters found.`r`n" }
+        } catch {}
+        
+        Write-Output $out
+    "#;
+    
+    let mut command = hidden_powershell();
+    command.args(&["-Command", script]);
+    let output = command.output().map_err(|e| e.to_string())?;
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
@@ -4547,6 +4610,7 @@ pub fn run() {
             set_dns_server,
             split_file,
             join_files,
+            generate_iso27001_report,
             // New features
             scan_bloatware,
             remove_bloatware,

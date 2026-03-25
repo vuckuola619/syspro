@@ -4,8 +4,6 @@ import { FileDown, RefreshCw, Clipboard, CheckCircle2, FileText } from "lucide-r
 import { useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { toast } from "sonner"
-import { save } from "@tauri-apps/plugin-dialog"
-
 export default function ExportReportPage() {
   const [report, setReport] = useState("")
   const [loading, setLoading] = useState(false)
@@ -16,7 +14,7 @@ export default function ExportReportPage() {
     setLoading(true)
     setSaved("")
     try {
-      const data = await invoke<string>("export_system_report")
+      const data = await invoke<string>("generate_iso27001_report")
       setReport(data)
       toast.success("Report generated successfully")
     } catch (e) { toast.error("Failed to generate report: " + String(e)) }
@@ -25,15 +23,17 @@ export default function ExportReportPage() {
 
   async function saveToFile() {
     try {
-      const path = await save({
-        defaultPath: `SABI_Report_${new Date().toISOString().slice(0, 10)}.txt`,
-        filters: [{ name: "Text", extensions: ["txt"] }],
-      })
-      if (path) {
-        // Use a simple Rust command to write the file
-        await invoke("save_text_file", { path, content: report })
-        setSaved(path)
-      }
+      const blob = new Blob([report], { type: "text/plain" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `SABI_ISO27001_Report_${new Date().toISOString().slice(0, 10)}.txt`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      setSaved("Downloads folder")
+      toast.success("Saved ISO 27001 Report to Downloads")
     } catch (e) { toast.error("Failed to save: " + String(e)) }
   }
 
@@ -47,8 +47,8 @@ export default function ExportReportPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Export System Report</h1>
-          <p className="text-sm text-muted-foreground mt-1">Generate a comprehensive report of your device hardware and software</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Export ISO 27001 Report</h1>
+          <p className="text-sm text-muted-foreground mt-1">Generate a comprehensive ISO 27001-compliant system audit report</p>
         </div>
         <Button onClick={generate} disabled={loading} className="gap-2">
           {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
@@ -60,8 +60,8 @@ export default function ExportReportPage() {
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
             <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p>Click "Generate Report" to create a full system report</p>
-            <p className="text-xs mt-2">Includes: OS, CPU, RAM, storage, GPU, network, BIOS, startup programs, installed software</p>
+            <p>Click "Generate Report" to create a full system audit report</p>
+            <p className="text-xs mt-2">Includes: OS details, BitLocker encryption status, Local Administrators, Firewall Rules, Antivirus Status, and Network Adapters</p>
           </CardContent>
         </Card>
       )}
