@@ -956,48 +956,82 @@ async fn clean_privacy_traces(category_ids: Vec<String>) -> Result<(), String> {
 
 #[tauri::command]
 async fn scan_duplicate_files(target_dir: String) -> Result<Vec<DuplicateGroup>, String> {
+    info!("[DuplicateFinder] Scanning: {}", target_dir);
     let mut size_map: HashMap<u64, Vec<String>> = HashMap::new();
     
-    // Group by size first
-    for entry in WalkDir::new(target_dir).into_iter().filter_map(|e| e.ok()) {
+    const MAX_FILES: usize = 50_000;       // Cap total files scanned
+    const MAX_FILE_SIZE: u64 = 500_000_000; // 500 MB max per file
+    const MIN_FILE_SIZE: u64 = 1024;        // 1 KB minimum
+    const PARTIAL_HASH_THRESHOLD: u64 = 131_072; // 128 KB — use partial hash above this
+    
+    let mut file_count: usize = 0;
+    
+    // Phase 1: Group by file size
+    for entry in WalkDir::new(&target_dir).into_iter().filter_map(|e| e.ok()) {
+        if file_count >= MAX_FILES { break; }
         if entry.file_type().is_file() {
             if let Ok(metadata) = entry.metadata() {
                 let size = metadata.len();
-                if size > 1024 { // Only files > 1KB
+                if size >= MIN_FILE_SIZE && size <= MAX_FILE_SIZE {
                     let path = entry.path().to_string_lossy().into_owned();
                     size_map.entry(size).or_default().push(path);
+                    file_count += 1;
                 }
             }
         }
     }
     
-    // For groups with > 1 file with same size, compute SHA-256
+    info!("[DuplicateFinder] Phase 1 done: {} files in {} size groups", file_count, size_map.len());
+    
+    // Phase 2: For size groups with > 1 file, compute hash (partial for large files)
     let mut hash_map: HashMap<String, Vec<String>> = HashMap::new();
     let mut sizes_by_hash: HashMap<String, u64> = HashMap::new();
     
-    for (size, paths) in size_map {
-        if paths.len() > 1 {
-            for path in paths {
-                if let Ok(mut file) = File::open(&path) {
-                    let mut hasher = Sha256::new();
-                    let mut buffer = [0; 8192]; // 8KB buffer
-                    
+    for (size, paths) in &size_map {
+        if paths.len() <= 1 { continue; }
+        
+        for path in paths {
+            if let Ok(mut file) = File::open(path) {
+                let mut hasher = Sha256::new();
+                
+                if *size > PARTIAL_HASH_THRESHOLD {
+                    // Partial hash: read first 64KB + last 64KB (saves memory on large files)
+                    let mut buf = [0u8; 65536];
+                    if let Ok(n) = file.read(&mut buf) {
+                        hasher.update(&buf[..n]);
+                    }
+                    // Seek to last 64KB
+                    use std::io::Seek;
+                    if file.seek(std::io::SeekFrom::End(-65536)).is_ok() {
+                        if let Ok(n) = file.read(&mut buf) {
+                            hasher.update(&buf[..n]);
+                        }
+                    }
+                    // Include size in hash to reduce false positives
+                    hasher.update(size.to_le_bytes());
+                } else {
+                    // Small file: hash entire contents
+                    let mut buffer = [0u8; 8192];
                     loop {
                         match file.read(&mut buffer) {
                             Ok(0) => break,
                             Ok(n) => hasher.update(&buffer[..n]),
-                            Err(_) => break, // ignore read errors
+                            Err(_) => break,
                         }
                     }
-                    
-                    let result = hasher.finalize();
-                    let hash_str = format!("{:x}", result);
-                    hash_map.entry(hash_str.clone()).or_default().push(path);
-                    sizes_by_hash.insert(hash_str, size);
                 }
+                
+                let hash_str = format!("{:x}", hasher.finalize());
+                hash_map.entry(hash_str.clone()).or_default().push(path.clone());
+                sizes_by_hash.insert(hash_str, *size);
             }
         }
     }
+    
+    // Drop size_map early to free memory
+    drop(size_map);
+    
+    info!("[DuplicateFinder] Phase 2 done: {} hash groups", hash_map.len());
     
     let mut groups = Vec::new();
     for (hash, paths) in hash_map {
@@ -1012,6 +1046,7 @@ async fn scan_duplicate_files(target_dir: String) -> Result<Vec<DuplicateGroup>,
         }
     }
     
+    info!("[DuplicateFinder] Found {} duplicate groups", groups.len());
     Ok(groups)
 }
 
