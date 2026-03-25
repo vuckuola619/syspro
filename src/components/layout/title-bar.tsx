@@ -34,7 +34,7 @@ export function TitleBar() {
           </svg>
         </div>
         <span className="text-xs font-semibold text-foreground/80 tracking-tight">SABI</span>
-        <span className="text-[10px] text-muted-foreground/60 font-medium">v1.1.0</span>
+        <span className="text-[10px] text-muted-foreground/60 font-medium">v1.1.1</span>
       </div>
 
       <span className="text-border mx-1 pointer-events-none">|</span>

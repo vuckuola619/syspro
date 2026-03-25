@@ -41,9 +41,9 @@
 
 | Format | File | Description |
 |:---:|:---|:---|
-| 💿 | [`SABI_1.1.0_x64-setup.exe`](https://github.com/vuckuola619/syspro/releases/latest) | **Recommended** — NSIS installer with auto-update support |
-| 📦 | [`SABI_1.1.0_x64_en-US.msi`](https://github.com/vuckuola619/syspro/releases/latest) | MSI installer for enterprise/GPO deployment |
-| 📂 | [`SABI_1.1.0_x64_portable.zip`](https://github.com/vuckuola619/syspro/releases/latest) | Portable — no installation required |
+| 💿 | [`SABI_1.1.1_x64-setup.exe`](https://github.com/vuckuola619/syspro/releases/latest) | **Recommended** — NSIS installer with auto-update support |
+| 📦 | [`SABI_1.1.1_x64_en-US.msi`](https://github.com/vuckuola619/syspro/releases/latest) | MSI installer for enterprise/GPO deployment |
+| 📂 | [`SABI_1.1.1_x64_portable.zip`](https://github.com/vuckuola619/syspro/releases/latest) | Portable — no installation required |
 
 > **Requirements:** Windows 10/11 (64-bit)
 

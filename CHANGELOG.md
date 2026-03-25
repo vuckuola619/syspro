@@ -4,6 +4,22 @@ All notable changes to **SABI** (System Analytics & Boost Infrastructure) are do
 
 ---
 
+## [1.1.1] — 2026-03-25
+
+### 🛠 Bug Fixes
+| # | Fix |
+|:---|:---|
+| BUG-1 | **App Uninstaller layout clipped** — reduced content padding (`p-8` → `p-6`) so Scan/Uninstall buttons are fully visible on smaller windows |
+| BUG-2 | **Title bar not draggable** — moved `data-tauri-drag-region` to the root title bar div so the entire bar is draggable |
+| BUG-3 | **Window controls (min/max/close) not clickable** — added `pointer-events-auto` to break out of the drag region; fixed close button hover color |
+| BUG-4 | **Update Manager KB descriptions missing** — backend now queries the Windows Update Session COM API (`Microsoft.Update.Session`) for full update titles (e.g. "2025-01 Cumulative Update for Windows 11"). Added link button to open Microsoft KB article on each update. Color-coded icons: green = Security Update, blue = regular Update |
+| BUG-5 | **Disk Health showing all zeros** — added WMI SMART raw data fallback (`MSStorageDriver_FailurePredictData`) when `Get-StorageReliabilityCounter` returns null. Parses SMART attribute IDs: 9 (Power On Hours), 194 (Temperature), 177/231 (Wear Level) |
+
+### 🏷 Misc
+- Title bar version display updated to v1.1.0 (was hardcoded v1.0.0)
+
+---
+
 ## [1.1.0] — 2026-03-25
 
 ### 🔐 Security Audit & Hardening
