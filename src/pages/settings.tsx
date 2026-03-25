@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Info, Sun, Moon, Monitor, Upload, X, Image, Globe, RefreshCw, CheckCircle2, Package, Download } from "lucide-react"
 import { useTheme, ACCENT_OPTIONS } from "@/context/theme-context"
 import { useI18n } from "@/context/i18n-context"
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { getVersion } from "@tauri-apps/api/app"
 
 interface AppUpdateInfo {
   current_version: string; latest_version: string; update_available: boolean
@@ -19,6 +20,11 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null)
   const [checking, setChecking] = useState(false)
+  const [appVersion, setAppVersion] = useState("…")
+
+  useEffect(() => {
+    getVersion().then(v => setAppVersion(v)).catch(() => setAppVersion("1.1.1"))
+  }, [])
 
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -186,7 +192,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium">Current Version</p>
-              <p className="text-xs text-muted-foreground">v1.0.0</p>
+              <p className="text-xs text-muted-foreground">v{appVersion}</p>
             </div>
             <Button variant="outline" size="sm" onClick={checkUpdate} disabled={checking} className="gap-1.5">
               {checking ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
@@ -251,7 +257,7 @@ export default function SettingsPage() {
         <CardContent>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Application</span><span className="font-medium">SABI</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Version</span><span className="font-medium">1.0.0</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Version</span><span className="font-medium">{appVersion}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Framework</span><span className="font-medium">Tauri 2.0</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Frontend</span><span className="font-medium">React + ShadCN UI</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Backend</span><span className="font-medium">Rust</span></div>
