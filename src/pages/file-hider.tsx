@@ -156,7 +156,7 @@ export default function FileHiderPage() {
 
       <Card className="border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10/50">
         <CardContent className="p-4">
-          <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">How it works:</span> Files are XOR-encrypted with a SHA-256 key derived from your password and saved with a <code className="bg-blue-100 dark:bg-blue-500/15 px-1 rounded">.locked</code> extension in the same folder. The encrypted file stays visible in Explorer so you can find it to decrypt later. Remember your password — it is not stored anywhere.</p>
+          <p className="text-xs text-blue-800 dark:text-blue-200"><span className="font-medium">How it works:</span> Files are encrypted with AES-256-GCM using a key derived from your password and saved with a <code className="bg-blue-100 dark:bg-blue-500/15 px-1 rounded">.locked</code> extension in the same folder. The encrypted file stays visible in Explorer so you can find it to decrypt later. Remember your password — it is not stored anywhere. Wrong password will produce a decryption error (not corrupted data).</p>
         </CardContent>
       </Card>
     </div>

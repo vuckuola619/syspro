@@ -33,7 +33,7 @@
 | **⚡ Fast** | Rust-powered backend with native Windows API calls |
 | **🎨 Modern UI** | Dark mode default, glassmorphism, smooth animations |
 | **🔒 Privacy-first** | No telemetry, no cloud — everything runs locally |
-| **🛠 All-in-one** | 30+ tools that replace multiple utility apps |
+| **🛠 All-in-one** | 40+ tools that replace multiple utility apps |
 
 ---
 
@@ -41,9 +41,9 @@
 
 | Format | File | Description |
 |:---:|:---|:---|
-| 💿 | [`SABI_1.0.0_x64-setup.exe`](https://github.com/vuckuola619/syspro/releases/latest) | **Recommended** — NSIS installer with auto-update support |
-| 📦 | [`SABI_1.0.0_x64_en-US.msi`](https://github.com/vuckuola619/syspro/releases/latest) | MSI installer for enterprise/GPO deployment |
-| 📂 | [`SABI_1.0.0_x64_portable.zip`](https://github.com/vuckuola619/syspro/releases/latest) | Portable — no installation required |
+| 💿 | [`SABI_1.1.0_x64-setup.exe`](https://github.com/vuckuola619/syspro/releases/latest) | **Recommended** — NSIS installer with auto-update support |
+| 📦 | [`SABI_1.1.0_x64_en-US.msi`](https://github.com/vuckuola619/syspro/releases/latest) | MSI installer for enterprise/GPO deployment |
+| 📂 | [`SABI_1.1.0_x64_portable.zip`](https://github.com/vuckuola619/syspro/releases/latest) | Portable — no installation required |
 
 > **Requirements:** Windows 10/11 (64-bit)
 
@@ -78,8 +78,8 @@
 - **Privacy Hardening** — Windows telemetry & privacy toggles
 - **Pop-up Blocker** — Suppress intrusive Windows notifications
 - **Firewall Manager** — View, toggle, create firewall rules
-- **File Hider** — Hide/unhide files and folders (attrib)
-- **Password Generator** — Cryptographically secure passwords
+- **File Hider** — AES-256-GCM encrypted file locking
+- **Password Generator** — Cryptographically secure passwords (OsRng)
 
 </td><td>
 

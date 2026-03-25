@@ -4,6 +4,53 @@ All notable changes to **SABI** (System Analytics & Boost Infrastructure) are do
 
 ---
 
+## [1.1.0] — 2026-03-25
+
+### 🔐 Security Audit & Hardening
+
+This release addresses all findings from a comprehensive security audit of the full codebase (4400+ lines Rust backend, 41 React pages).
+
+### ⛓️‍💥 Breaking Change
+- **File Hider encryption format changed** — files encrypted with v1.0.0 (XOR) cannot be decrypted with v1.1.0 (AES-256-GCM). Decrypt any `.locked` files with v1.0.0 before upgrading.
+
+### 🔒 Security Fixes (Medium)
+| ID | Fix |
+|:---|:---|
+| SEC-M1 | **File Hider: XOR → AES-256-GCM** — Files now use authenticated encryption with random 12-byte nonce. Wrong password returns a clear error instead of silently producing corrupt output. Added `aes-gcm` crate. |
+| SEC-M2 | **Password Generator: xorshift64 → OsRng CSPRNG** — Passwords are now generated using OS-level cryptographic randomness via `rand::thread_rng()`. Added `rand` crate. |
+| SEC-M3 | **Command Injection Prevention** — Added `sanitize_powershell_input()` helper that strips injection characters (`` ` ``, `$`, `;`, `|`, `()`, `{}`). Applied to 5 commands: `remove_bloatware`, `restore_bloatware`, `set_service_status`, `toggle_firewall_rule`, `add_firewall_rule`. |
+| SEC-M4 | **Hosts File Input Validation** — `add_hosts_entry` now validates IPv4 format, hostname charset (`[a-zA-Z0-9._-]`), and rejects newlines/comment injection. |
+
+### 🛠 Bug Fixes (Low)
+| ID | Fix |
+|:---|:---|
+| SEC-L1 | **Turbo Boost Full Restore** — `deactivate_turbo_boost` now restarts all 11 services it stopped, not just 2 (SysMain, WSearch). |
+| SEC-L2 | **Registry Defrag Real Measurement** — Fragmentation percentage now based on actual hive file size vs estimated compact size (via key count), not static thresholds. |
+| SEC-L3 | Benchmark temp file renamed `systempro_bench.tmp` → `sabi_bench.tmp`. |
+
+### 🏷 Branding & Quality
+- Startup log: `[SystemPro]` → `[SABI]`
+- App version: hardcoded `"1.0.0"` → dynamic `env!("CARGO_PKG_VERSION")`
+- GitHub Update User-Agent: `SystemPro-Updater` → `SABI-Updater`
+- `chrono_now()`: replaced PowerShell spawn with native `chrono::Local::now()`
+- File Hider UI text updated to describe AES-256-GCM
+
+### 📦 Dependencies Added
+| Crate | Version | Purpose |
+|:---|:---|:---|
+| `aes-gcm` | 0.10 | AES-256-GCM authenticated encryption |
+| `rand` | 0.8 | Cryptographic random number generation |
+| `chrono` | 0.4 | Native date/time formatting |
+
+### 📦 Release Assets
+| File | Description |
+|:---|:---|
+| `SABI_1.1.0_x64-setup.exe` | NSIS installer (recommended) |
+| `SABI_1.1.0_x64_en-US.msi` | MSI installer |
+| `SABI_1.1.0_x64_portable.zip` | Portable (no install) |
+
+---
+
 ## [1.0.0] — 2026-03-20
 
 ### 🎨 Rebrand

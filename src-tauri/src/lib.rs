@@ -5,6 +5,9 @@ use std::fs::File;
 use std::io::{Read, Write, BufReader, BufWriter};
 use std::collections::HashMap;
 use sha2::{Sha256, Digest};
+use aes_gcm::{Aes256Gcm, KeyInit, aead::Aead};
+use aes_gcm::aead::generic_array::GenericArray;
+use rand::Rng;
 use walkdir::WalkDir;
 use winreg::enums::*;
 use winreg::RegKey;
@@ -23,6 +26,12 @@ fn hidden_powershell() -> std::process::Command {
     #[cfg(windows)]
     cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
     cmd
+}
+
+/// Sanitize user input before interpolating into PowerShell commands.
+/// Strips characters that could cause command injection: backtick, $, ;, |, (, ), newlines.
+fn sanitize_powershell_input(input: &str) -> String {
+    input.chars().filter(|c| !matches!(c, '`' | '$' | ';' | '|' | '(' | ')' | '{' | '}' | '\n' | '\r')).collect::<String>().replace('\'', "''")
 }
 
 #[derive(Serialize)]
@@ -2434,7 +2443,8 @@ async fn remove_bloatware(packages: Vec<String>) -> Result<String, String> {
     info!("[Debloater] Removing {} packages", packages.len());
     let mut removed = 0;
     for pkg in &packages {
-        let cmd = format!("Get-AppxPackage '{}' | Remove-AppxPackage -ErrorAction SilentlyContinue", pkg);
+        let safe_pkg = sanitize_powershell_input(pkg);
+        let cmd = format!("Get-AppxPackage '{}' | Remove-AppxPackage -ErrorAction SilentlyContinue", safe_pkg);
         let result = hidden_powershell()
         .args(&["-Command", &cmd])
             .output();
@@ -2447,9 +2457,10 @@ async fn remove_bloatware(packages: Vec<String>) -> Result<String, String> {
 #[tauri::command]
 async fn restore_bloatware(package_name: String) -> Result<String, String> {
     info!("[Debloater] Restoring package: {}", package_name);
+    let safe_name = sanitize_powershell_input(&package_name);
     let cmd = format!(
         "Get-AppxPackage -AllUsers '{}' | ForEach-Object {{Add-AppxPackage -DisableDevelopmentMode -Register \"$($_.InstallLocation)\\AppxManifest.xml\" -ErrorAction SilentlyContinue}}",
-        package_name
+        safe_name
     );
     let output = hidden_powershell()
         .args(&["-Command", &cmd])
@@ -2845,12 +2856,13 @@ async fn get_services() -> Vec<ServiceItem> {
 #[tauri::command]
 async fn set_service_status(service_name: String, action: String) -> Result<String, String> {
     info!("[ServiceManager] {} service: {}", action, service_name);
+    let safe_name = sanitize_powershell_input(&service_name);
     let cmd = match action.as_str() {
-        "stop" => format!("Stop-Service '{}' -Force -ErrorAction Stop", service_name),
-        "start" => format!("Start-Service '{}' -ErrorAction Stop", service_name),
-        "disable" => format!("Set-Service '{}' -StartupType Disabled -ErrorAction Stop", service_name),
-        "auto" => format!("Set-Service '{}' -StartupType Automatic -ErrorAction Stop", service_name),
-        "manual" => format!("Set-Service '{}' -StartupType Manual -ErrorAction Stop", service_name),
+        "stop" => format!("Stop-Service '{}' -Force -ErrorAction Stop", safe_name),
+        "start" => format!("Start-Service '{}' -ErrorAction Stop", safe_name),
+        "disable" => format!("Set-Service '{}' -StartupType Disabled -ErrorAction Stop", safe_name),
+        "auto" => format!("Set-Service '{}' -StartupType Automatic -ErrorAction Stop", safe_name),
+        "manual" => format!("Set-Service '{}' -StartupType Manual -ErrorAction Stop", safe_name),
         _ => return Err("Unknown action".into()),
     };
     let output = hidden_powershell()
@@ -3055,6 +3067,24 @@ async fn read_hosts_file() -> Vec<HostsEntry> {
 #[tauri::command]
 async fn add_hosts_entry(ip: String, hostname: String) -> Result<(), String> {
     info!("[HostsEditor] Adding {} -> {}", ip, hostname);
+
+    // Validate IP (IPv4 only for safety)
+    let ip_parts: Vec<&str> = ip.split('.').collect();
+    if ip_parts.len() != 4 || !ip_parts.iter().all(|p| p.parse::<u8>().is_ok()) {
+        return Err("Invalid IP address. Use IPv4 format (e.g., 0.0.0.0)".into());
+    }
+
+    // Validate hostname: only allow safe characters
+    if hostname.is_empty() || !hostname.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_') {
+        return Err("Invalid hostname. Only alphanumeric, dot, dash, underscore allowed.".into());
+    }
+
+    // Reject newlines or comment chars that could corrupt the hosts file
+    if ip.contains('\n') || ip.contains('\r') || ip.contains('#')
+        || hostname.contains('\n') || hostname.contains('\r') || hostname.contains('#') {
+        return Err("Input contains invalid characters".into());
+    }
+
     let hosts_path = r"C:\Windows\System32\drivers\etc\hosts";
     let mut content = std::fs::read_to_string(hosts_path).map_err(|e| e.to_string())?;
     content.push_str(&format!("\n{} {}", ip, hostname));
@@ -3294,8 +3324,9 @@ async fn get_firewall_rules() -> Vec<FirewallRule> {
 #[tauri::command]
 async fn toggle_firewall_rule(rule_name: String, enable: bool) -> Result<String, String> {
     info!("[Firewall] {} rule: {}", if enable { "Enabling" } else { "Disabling" }, rule_name);
+    let safe_name = sanitize_powershell_input(&rule_name);
     let action = if enable { "True" } else { "False" };
-    let cmd = format!("Set-NetFirewallRule -Name '{}' -Enabled {} -ErrorAction Stop", rule_name.replace('\'', "''"), action);
+    let cmd = format!("Set-NetFirewallRule -Name '{}' -Enabled {} -ErrorAction Stop", safe_name, action);
     let output = hidden_powershell()
         .args(&["-Command", &cmd])
         .output()
@@ -3309,9 +3340,11 @@ async fn add_firewall_rule(display_name: String, program_path: String, direction
     info!("[Firewall] Adding rule: {} for {}", display_name, program_path);
     let dir = if direction == "Outbound" { "Outbound" } else { "Inbound" };
     let act = if action == "Block" { "Block" } else { "Allow" };
+    let safe_display = sanitize_powershell_input(&display_name);
+    let safe_program = sanitize_powershell_input(&program_path);
     let cmd = format!(
         "New-NetFirewallRule -DisplayName '{}' -Direction {} -Action {} -Program '{}' -ErrorAction Stop",
-        display_name.replace('\'', "''"), dir, act, program_path.replace('\'', "''")
+        safe_display, dir, act, safe_program
     );
     let output = hidden_powershell()
         .args(&["-Command", &cmd])
@@ -3361,7 +3394,7 @@ async fn run_benchmark() -> BenchmarkResult {
     let cpu_score = if cpu_time > 0 { (prime_count as f64 / cpu_time as f64) * 1000.0 } else { 9999.0 };
 
     // Disk Benchmark: Write then read 64MB
-    let temp_path = env::temp_dir().join("systempro_bench.tmp");
+    let temp_path = env::temp_dir().join("sabi_bench.tmp");
     let chunk_size = 1024 * 1024; // 1MB
     let total_mb = 64u64;
     let buffer: Vec<u8> = (0..chunk_size).map(|i| (i % 256) as u8).collect();
@@ -3482,11 +3515,16 @@ async fn activate_turbo_boost() -> BoostResult {
 #[tauri::command]
 async fn deactivate_turbo_boost() -> Result<String, String> {
     info!("[TurboBoost] Deactivating turbo mode");
-    let services = ["SysMain", "WSearch"];
+    // Restore ALL services that activate_turbo_boost stops
+    let services = [
+        "SysMain", "DiagTrack", "WSearch", "TabletInputService",
+        "MapsBroker", "lfsvc", "SharedAccess", "WMPNetworkSvc",
+        "dmwappushservice", "RemoteRegistry", "RetailDemo",
+    ];
     for svc in &services {
         let cmd = format!("Start-Service '{}' -ErrorAction SilentlyContinue", svc);
         let _ = hidden_powershell()
-        .args(&["-Command", &cmd])
+            .args(&["-Command", &cmd])
             .output();
     }
     // Restore visual effects
@@ -3605,25 +3643,33 @@ async fn hide_file_or_folder(path: String, password: String) -> Result<String, S
     let meta = std::fs::metadata(&path).map_err(|e| format!("Path error: {}", e))?;
 
     if meta.is_file() {
-        // Encrypt file content with XOR key derived from password hash
+        // Derive 256-bit key from password using SHA-256
         let mut hasher = Sha256::new();
         hasher.update(password.as_bytes());
-        let key: Vec<u8> = hasher.finalize().to_vec();
+        let key_bytes = hasher.finalize();
+        let key = GenericArray::from_slice(&key_bytes);
+        let cipher = Aes256Gcm::new(key);
+
+        // Generate a random 96-bit nonce
+        let mut nonce_bytes = [0u8; 12];
+        rand::thread_rng().fill(&mut nonce_bytes);
+        let nonce = GenericArray::from_slice(&nonce_bytes);
 
         let data = std::fs::read(&path).map_err(|e| format!("Read error: {}", e))?;
-        let encrypted: Vec<u8> = data.iter().enumerate().map(|(i, b)| b ^ key[i % key.len()]).collect();
+        let ciphertext = cipher.encrypt(nonce, data.as_ref())
+            .map_err(|e| format!("Encryption error: {}", e))?;
 
-        // Write encrypted data with .locked extension
+        // File format: [12-byte nonce][ciphertext + 16-byte auth tag]
+        let mut output = Vec::with_capacity(12 + ciphertext.len());
+        output.extend_from_slice(&nonce_bytes);
+        output.extend_from_slice(&ciphertext);
+
         let locked_path = format!("{}.locked", path);
-        std::fs::write(&locked_path, &encrypted).map_err(|e| format!("Write error: {}", e))?;
+        std::fs::write(&locked_path, &output).map_err(|e| format!("Write error: {}", e))?;
         std::fs::remove_file(&path).map_err(|e| format!("Cleanup error: {}", e))?;
-
-        // NOTE: We intentionally do NOT set hidden+system attributes on the .locked file
-        // so the user can still find it in Explorer to unlock later.
 
         Ok(format!("File encrypted: {}", locked_path))
     } else if meta.is_dir() {
-        // Hide folder: set hidden attribute only (not system, so "show hidden" still reveals it)
         let _ = std::process::Command::new("attrib")
             .args(&["+h", &path])
             .output();
@@ -3638,10 +3684,12 @@ async fn unhide_file_or_folder(path: String, password: String) -> Result<String,
     info!("[FileHide] Unhiding: {}", path);
 
     if path.ends_with(".locked") {
-        // Decrypt file
+        // Derive 256-bit key from password using SHA-256
         let mut hasher = Sha256::new();
         hasher.update(password.as_bytes());
-        let key: Vec<u8> = hasher.finalize().to_vec();
+        let key_bytes = hasher.finalize();
+        let key = GenericArray::from_slice(&key_bytes);
+        let cipher = Aes256Gcm::new(key);
 
         // Remove hidden attributes first
         let _ = std::process::Command::new("attrib")
@@ -3649,10 +3697,19 @@ async fn unhide_file_or_folder(path: String, password: String) -> Result<String,
             .output();
 
         let data = std::fs::read(&path).map_err(|e| format!("Read error: {}", e))?;
-        let decrypted: Vec<u8> = data.iter().enumerate().map(|(i, b)| b ^ key[i % key.len()]).collect();
+        if data.len() < 12 {
+            return Err("Invalid encrypted file: too short".into());
+        }
+
+        // Extract nonce (first 12 bytes) and ciphertext
+        let nonce = GenericArray::from_slice(&data[..12]);
+        let ciphertext = &data[12..];
+
+        let plaintext = cipher.decrypt(nonce, ciphertext)
+            .map_err(|_| "Decryption failed: wrong password or corrupted file".to_string())?;
 
         let original_path = path.trim_end_matches(".locked").to_string();
-        std::fs::write(&original_path, &decrypted).map_err(|e| format!("Write error: {}", e))?;
+        std::fs::write(&original_path, &plaintext).map_err(|e| format!("Write error: {}", e))?;
         std::fs::remove_file(&path).map_err(|e| format!("Cleanup error: {}", e))?;
 
         Ok(format!("File decrypted: {}", original_path))
@@ -3691,20 +3748,12 @@ fn generate_password(length: u32, use_uppercase: bool, use_lowercase: bool, use_
     let charset_bytes: Vec<u8> = charset.bytes().collect();
     let charset_len = charset_bytes.len();
 
-    // Use system time + counters for entropy (no external crate needed)
-    let mut seed: u64 = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos() as u64;
+    // Use cryptographically secure random number generator (OsRng)
+    let mut rng = rand::thread_rng();
 
     let mut password = String::new();
-    for i in 0..length {
-        // Simple xorshift64 PRNG
-        seed ^= seed << 13;
-        seed ^= seed >> 7;
-        seed ^= seed << 17;
-        seed = seed.wrapping_add(i as u64).wrapping_mul(6364136223846793005);
-        let idx = (seed as usize) % charset_len;
+    for _ in 0..length {
+        let idx = rng.gen_range(0..charset_len);
         password.push(charset_bytes[idx] as char);
     }
 
@@ -3753,8 +3802,27 @@ async fn analyze_registry_fragmentation() -> Vec<RegistryDefragInfo> {
             std::fs::metadata(&ntuser_path).map(|m| m.len() as f64 / 1024.0 / 1024.0).unwrap_or(0.0)
         };
 
-        // Estimate fragmentation (heuristic: larger = more fragmented)
-        let frag = if size_mb > 100.0 { 15.0 } else if size_mb > 50.0 { 10.0 } else if size_mb > 20.0 { 5.0 } else { 2.0 };
+        // Estimate fragmentation from actual hive file size relative to expected compact size
+        // Uses PowerShell to count registry keys as a baseline
+        let key_count_cmd = if !path.is_empty() {
+            format!("(Get-ChildItem -Path 'Registry::{}' -Recurse -ErrorAction SilentlyContinue | Measure-Object).Count", name.replace("HKLM\\", "HKLM:\\"))
+        } else {
+            String::from("(Get-ChildItem -Path 'HKCU:\\' -Recurse -ErrorAction SilentlyContinue | Measure-Object).Count")
+        };
+        let key_count: f64 = hidden_powershell()
+            .args(&["-Command", &key_count_cmd])
+            .output()
+            .ok()
+            .and_then(|o| String::from_utf8_lossy(&o.stdout).trim().parse::<f64>().ok())
+            .unwrap_or(1000.0);
+        // Estimated compact size: ~0.5KB per key average
+        let estimated_compact_mb = key_count * 0.5 / 1024.0;
+        let frag = if estimated_compact_mb > 0.0 && size_mb > estimated_compact_mb {
+            (((size_mb - estimated_compact_mb) / size_mb) * 100.0).min(50.0).max(0.0)
+        } else {
+            0.0
+        };
+        let frag = (frag * 10.0).round() / 10.0;
 
         results.push(RegistryDefragInfo {
             hive_name: name.to_string(),
@@ -4037,11 +4105,7 @@ try {
 }
 
 fn chrono_now() -> String {
-    let output = hidden_powershell()
-        .args(&["-Command", "Get-Date -Format 'yyyy-MM-dd HH:mm:ss'"])
-        .output();
-    output.ok().map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
-        .unwrap_or_else(|| "unknown".to_string())
+    chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string()
 }
 
 // Helper trait for creation_flags on windows
@@ -4257,12 +4321,12 @@ struct AppUpdateInfo {
 #[tauri::command]
 async fn check_for_app_update() -> Result<AppUpdateInfo, String> {
     info!("[AutoUpdate] Checking for updates from GitHub Releases API");
-    let current = "1.0.0";
+    let current = env!("CARGO_PKG_VERSION");
 
     let cmd = r#"
 try {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    $headers = @{ 'User-Agent' = 'SystemPro-Updater' }
+    $headers = @{ 'User-Agent' = 'SABI-Updater' }
     $resp = Invoke-RestMethod -Uri 'https://api.github.com/repos/vuckuola619/syspro/releases/latest' -Headers $headers -TimeoutSec 10
     $result = @{
         tag = $resp.tag_name
@@ -4346,7 +4410,7 @@ pub fn run() {
         .format_timestamp_secs()
         .init();
     
-    info!("[SystemPro] Application starting...");
+    info!("[SABI] Application starting...");
     
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
