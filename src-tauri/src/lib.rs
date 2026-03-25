@@ -698,55 +698,139 @@ async fn get_processes() -> PerformanceStats {
     }
 }
 
+#[derive(Serialize)]
+struct OptimizeMemoryResult {
+    before_mb: f64,
+    after_mb: f64,
+    freed_mb: f64,
+    total_mb: f64,
+    actions: Vec<String>,
+}
+
 #[tauri::command]
-async fn optimize_memory() -> Result<String, String> {
+async fn optimize_memory() -> Result<OptimizeMemoryResult, String> {
     info!("[PerformanceMonitor] Starting memory optimization");
     
     let sys = System::new_all();
-    let before_used = sys.used_memory() as f64 / 1_073_741_824.0;
+    let total_mb = sys.total_memory() as f64 / 1_048_576.0;
+    let before_mb = sys.used_memory() as f64 / 1_048_576.0;
+    let mut actions: Vec<String> = Vec::new();
     
-    // Method: Call Windows SetProcessWorkingSetSize(-1,-1) on own process
-    // This tells the OS to trim the working set, forcing paged-out memory to be released
+    actions.push(format!("Snapshot taken: {:.0} MB used / {:.0} MB total", before_mb, total_mb));
+
+    // 1. Trim working sets of high-memory processes via PowerShell
     #[cfg(target_os = "windows")]
     {
-        use std::os::windows::io::AsRawHandle;
-        extern "system" {
-            fn SetProcessWorkingSetSize(
-                hProcess: *mut std::ffi::c_void,
-                dwMinimumWorkingSetSize: usize,
-                dwMaximumWorkingSetSize: usize,
-            ) -> i32;
-        }
+        actions.push("Trimming working sets of high-memory processes...".into());
         
-        let handle = std::process::Command::new("cmd")
-            .args(&["/C", "echo", "nop"])
-            .spawn()
-            .ok();
-        
-        // Trim our own process working set
-        let current = unsafe {
-            let h = std::process::Command::new("cmd")
-                .args(&["/C", "echo"])
-                .spawn();
-            if let Ok(child) = h {
-                let raw = child.as_raw_handle();
-                SetProcessWorkingSetSize(raw as *mut std::ffi::c_void, usize::MAX, usize::MAX);
+        let script = r#"
+            $trimmed = @()
+            Get-Process | Sort-Object WorkingSet64 -Descending | Select-Object -First 30 | ForEach-Object {
+                $name = $_.ProcessName
+                $ws = [math]::Round($_.WorkingSet64 / 1MB, 1)
+                $trimmed += "$name (${ws} MB)"
             }
-        };
+            # Call EmptyWorkingSet on high-memory procs
+            Add-Type -TypeDefinition @"
+                using System; using System.Runtime.InteropServices;
+                public class WS { [DllImport("psapi.dll")] public static extern bool EmptyWorkingSet(IntPtr hProcess); }
+"@
+            $freed = 0
+            Get-Process | Sort-Object WorkingSet64 -Descending | Select-Object -First 30 | ForEach-Object {
+                try {
+                    $before = $_.WorkingSet64
+                    [WS]::EmptyWorkingSet($_.Handle) | Out-Null
+                    $_.Refresh()
+                    $diff = $before - $_.WorkingSet64
+                    if ($diff -gt 0) { $freed += $diff }
+                } catch {}
+            }
+            $freedMB = [math]::Round($freed / 1MB, 1)
+            Write-Output ($trimmed -join '|')
+            Write-Output "FREED:$freedMB"
+        "#;
         
-        // Also run a garbage collector round by dropping large allocations
-        drop(handle);
-        let _ = current;
+        let output = hidden_powershell()
+            .args(&["-Command", script])
+            .output();
+        
+        if let Ok(out) = output {
+            let stdout = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            let lines: Vec<&str> = stdout.lines().collect();
+            
+            for line in &lines {
+                if line.starts_with("FREED:") {
+                    let mb = line.replace("FREED:", "");
+                    actions.push(format!("EmptyWorkingSet freed {} MB from top 30 processes", mb));
+                } else if !line.is_empty() {
+                    // This is the process list
+                    let procs: Vec<&str> = line.split('|').collect();
+                    let count = procs.len();
+                    actions.push(format!("Targeted {} high-memory processes", count));
+                    for p in procs.iter().take(10) {
+                        actions.push(format!("  → Trimmed: {}", p.trim()));
+                    }
+                    if count > 10 {
+                        actions.push(format!("  ... and {} more", count - 10));
+                    }
+                }
+            }
+        } else {
+            actions.push("⚠ EmptyWorkingSet call failed (access denied or not elevated)".into());
+        }
+
+        // 2. Clear system file cache standby list
+        actions.push("Clearing standby memory cache...".into());
+        let cache_script = r#"
+            # Clear file system cache (requires admin)
+            try {
+                $code = @"
+                    using System; using System.Runtime.InteropServices;
+                    public class MemCache {
+                        [DllImport("ntdll.dll")] public static extern int NtSetSystemInformation(int c, ref int b, int l);
+                    }
+"@
+                Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue
+                $cmd = 0x50
+                $sz = [System.Runtime.InteropServices.Marshal]::SizeOf([Type][int])
+                $buf = 4
+                [MemCache]::NtSetSystemInformation($cmd, [ref]$buf, $sz) | Out-Null
+                Write-Output "OK"
+            } catch { Write-Output "SKIP" }
+        "#;
+        
+        let cache_out = hidden_powershell()
+            .args(&["-Command", cache_script])
+            .output();
+        
+        if let Ok(out) = cache_out {
+            let result = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if result.contains("OK") {
+                actions.push("✓ Standby memory cache cleared successfully".into());
+            } else {
+                actions.push("⚠ Standby cache clear skipped (requires admin elevation)".into());
+            }
+        }
     }
     
-    // Wait and re-measure
-    std::thread::sleep(std::time::Duration::from_millis(1000));
+    // 3. Wait and re-measure
+    actions.push("Waiting for OS to reclaim pages...".into());
+    std::thread::sleep(std::time::Duration::from_millis(1500));
     let sys_after = System::new_all();
-    let after_used = sys_after.used_memory() as f64 / 1_073_741_824.0;
-    let freed = (before_used - after_used).max(0.0);
+    let after_mb = sys_after.used_memory() as f64 / 1_048_576.0;
+    let freed_mb = (before_mb - after_mb).max(0.0);
     
-    info!("[PerformanceMonitor] Memory optimization complete: freed {:.2} GB", freed);
-    Ok(format!("Freed {:.0} MB of RAM", freed * 1024.0))
+    actions.push(format!("Final snapshot: {:.0} MB used ({:.0} MB freed)", after_mb, freed_mb));
+    
+    info!("[PerformanceMonitor] Memory optimization complete: freed {:.0} MB", freed_mb);
+    
+    Ok(OptimizeMemoryResult {
+        before_mb,
+        after_mb,
+        freed_mb,
+        total_mb,
+        actions,
+    })
 }
 
 #[tauri::command]

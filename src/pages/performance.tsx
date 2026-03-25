@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge"
 import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { Progress } from "@/components/ui/progress"
-import { Cpu, MemoryStick, Zap, RefreshCw } from "lucide-react"
+import { Cpu, MemoryStick, Zap, RefreshCw, ScrollText } from "lucide-react"
+import { toast } from "sonner"
 
 interface ProcessInfo {
   name: string
@@ -19,6 +20,14 @@ interface PerformanceStats {
   processes: ProcessInfo[]
 }
 
+interface OptimizeResult {
+  before_mb: number
+  after_mb: number
+  freed_mb: number
+  total_mb: number
+  actions: string[]
+}
+
 export default function PerformancePage() {
   const [stats, setStats] = useState<PerformanceStats>({
     cpu_usage: 0,
@@ -26,19 +35,20 @@ export default function PerformancePage() {
     processes: [],
   })
   const [isOptimizing, setIsOptimizing] = useState(false)
-  const [optimized, setOptimized] = useState(false)
+  const [optimizeResult, setOptimizeResult] = useState<OptimizeResult | null>(null)
 
   async function optimizeRam() {
     setIsOptimizing(true)
+    setOptimizeResult(null)
     try {
-      await invoke("optimize_memory")
-    } catch (_e) {
-      // continues regardless
-    }
-    setTimeout(() => {
+      const result = await invoke<OptimizeResult>("optimize_memory")
+      setOptimizeResult(result)
+      toast.success(`Freed ${result.freed_mb.toFixed(0)} MB of RAM`)
+    } catch (e) {
+      toast.error(`Optimization failed: ${e}`)
+    } finally {
       setIsOptimizing(false)
-      setOptimized(true)
-    }, 2000)
+    }
   }
 
   useEffect(() => {
@@ -77,7 +87,7 @@ export default function PerformancePage() {
                 <p className="text-lg font-semibold">{stats.cpu_usage.toFixed(1)}%</p>
               </div>
             </div>
-            <Progress value={stats.cpu_usage} className="mt-3 h-1.5" indicatorClassName="bg-blue-50 dark:bg-blue-500/100" />
+            <Progress value={stats.cpu_usage} className="mt-3 h-1.5" indicatorClassName="bg-blue-500" />
           </CardContent>
         </Card>
         <Card>
@@ -91,7 +101,7 @@ export default function PerformancePage() {
                 <p className="text-lg font-semibold">{stats.ram_usage.toFixed(1)}%</p>
               </div>
             </div>
-            <Progress value={stats.ram_usage} className="mt-3 h-1.5" indicatorClassName="bg-violet-50 dark:bg-violet-500/100" />
+            <Progress value={stats.ram_usage} className="mt-3 h-1.5" indicatorClassName="bg-violet-500" />
           </CardContent>
         </Card>
         <Card>
@@ -102,7 +112,7 @@ export default function PerformancePage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Optimization</p>
-                <p className="text-lg font-semibold">{optimized ? "Done" : "Ready"}</p>
+                <p className="text-lg font-semibold">{optimizeResult ? `${optimizeResult.freed_mb.toFixed(0)} MB freed` : "Ready"}</p>
               </div>
             </div>
             <Button
@@ -120,6 +130,38 @@ export default function PerformancePage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Optimization Action Log */}
+      {optimizeResult && (
+        <Card>
+          <CardContent className="p-0">
+            <div className="px-4 py-3 border-b flex items-center justify-between">
+              <h3 className="text-sm font-medium flex items-center gap-2">
+                <ScrollText className="h-4 w-4" /> Optimization Action Log
+              </h3>
+              <div className="flex gap-2">
+                <Badge variant="secondary">{optimizeResult.before_mb.toFixed(0)} → {optimizeResult.after_mb.toFixed(0)} MB</Badge>
+                <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+                  {optimizeResult.freed_mb.toFixed(0)} MB freed
+                </Badge>
+              </div>
+            </div>
+            <div className="divide-y max-h-[300px] overflow-y-auto">
+              {optimizeResult.actions.map((action, i) => (
+                <div key={i} className="px-4 py-2 text-sm font-mono">
+                  <span className="text-muted-foreground mr-2 text-xs">[{String(i + 1).padStart(2, "0")}]</span>
+                  <span className={
+                    action.startsWith("✓") ? "text-emerald-600" :
+                    action.startsWith("⚠") ? "text-amber-600" :
+                    action.startsWith("  →") ? "text-muted-foreground text-xs" :
+                    ""
+                  }>{action}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent className="p-0">
