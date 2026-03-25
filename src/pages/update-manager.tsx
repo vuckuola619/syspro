@@ -1,13 +1,14 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { RefreshCw, Pause, Shield } from "lucide-react"
+import { RefreshCw, Pause, Shield, ExternalLink } from "lucide-react"
 import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { toast } from "sonner"
 
 interface UpdateInfo {
-  hotfix_id: string; description: string; installed_on: string
+  hotfix_id: string; description: string; installed_on: string;
+  title: string; kb_url: string
 }
 
 export default function UpdateManagerPage() {
@@ -27,7 +28,15 @@ export default function UpdateManagerPage() {
     try {
       const msg = await invoke<string>("pause_windows_updates", { days })
       setResult(msg)
-    } catch (e: unknown) { setResult(String(e)) }
+      toast.success(msg)
+    } catch (e: unknown) {
+      setResult(String(e))
+      toast.error(String(e))
+    }
+  }
+
+  async function openUrl(url: string) {
+    try { await invoke("open_in_explorer", { path: url }) } catch {}
   }
 
   return (
@@ -60,13 +69,31 @@ export default function UpdateManagerPage() {
       <div className="space-y-1">
         {updates.map(u => (
           <Card key={u.hotfix_id}>
-            <CardContent className="p-2.5 flex items-center gap-3">
-              <Shield className="h-4 w-4 text-blue-500 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-xs">{u.hotfix_id}</p>
-                <p className="text-[10px] text-muted-foreground">{u.description}</p>
+            <CardContent className="p-3 flex items-center gap-3">
+              <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${u.description === "Security Update" ? "bg-emerald-50 dark:bg-emerald-500/10" : "bg-blue-50 dark:bg-blue-500/10"}`}>
+                <Shield className={`h-4 w-4 ${u.description === "Security Update" ? "text-emerald-600" : "text-blue-500"}`} />
               </div>
-              <Badge variant="outline" className="text-[10px]">{u.installed_on}</Badge>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-sm">{u.hotfix_id}</p>
+                  <Badge variant={u.description === "Security Update" ? "default" : "secondary"} className="text-[10px]">
+                    {u.description || "Update"}
+                  </Badge>
+                </div>
+                {u.title ? (
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">{u.title}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-0.5">Windows {u.description || "Update"}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[10px] text-muted-foreground">{u.installed_on}</span>
+                {u.kb_url && (
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openUrl(u.kb_url)} title="View KB article">
+                    <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}

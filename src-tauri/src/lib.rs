@@ -3150,12 +3150,46 @@ struct UpdateInfo {
     hotfix_id: String,
     description: String,
     installed_on: String,
+    title: String,
+    kb_url: String,
 }
 
 #[tauri::command]
 async fn get_update_history() -> Vec<UpdateInfo> {
     info!("[UpdateManager] Getting update history");
-    let cmd = "Get-HotFix | Select-Object HotFixID, Description, InstalledOn | ConvertTo-Json -Compress";
+    // Query update history from Windows Update Session COM API for richer titles,
+    // then fall back to Get-HotFix for installed date and type
+    let cmd = r#"
+$Session = New-Object -ComObject Microsoft.Update.Session -ErrorAction SilentlyContinue
+$titles = @{}
+if ($Session) {
+    try {
+        $Searcher = $Session.CreateUpdateSearcher()
+        $total = $Searcher.GetTotalHistoryCount()
+        if ($total -gt 0) {
+            $history = $Searcher.QueryHistory(0, [math]::Min($total, 200))
+            foreach ($entry in $history) {
+                if ($entry.Title -match 'KB(\d+)') {
+                    $kb = 'KB' + $Matches[1]
+                    if (-not $titles.ContainsKey($kb)) {
+                        $titles[$kb] = $entry.Title
+                    }
+                }
+            }
+        }
+    } catch {}
+}
+Get-HotFix | ForEach-Object {
+    $kb = $_.HotFixID
+    $t = if ($titles.ContainsKey($kb)) { $titles[$kb] } else { '' }
+    [PSCustomObject]@{
+        HotFixID = $kb
+        Description = $_.Description
+        InstalledOn = if ($_.InstalledOn) { $_.InstalledOn.ToString('yyyy-MM-dd') } else { '' }
+        Title = $t
+    }
+} | ConvertTo-Json -Compress
+"#;
     let output = hidden_powershell()
         .args(&["-Command", cmd])
         .output();
@@ -3178,10 +3212,18 @@ async fn get_update_history() -> Vec<UpdateInfo> {
     };
     
     entries.iter().filter_map(|e| {
+        let hotfix_id = e.get("HotFixID").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let kb_url = if !hotfix_id.is_empty() {
+            format!("https://support.microsoft.com/help/{}", hotfix_id.trim_start_matches("KB"))
+        } else {
+            String::new()
+        };
         Some(UpdateInfo {
-            hotfix_id: e.get("HotFixID").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+            hotfix_id: hotfix_id.clone(),
             description: e.get("Description").and_then(|v| v.as_str()).unwrap_or("").to_string(),
             installed_on: e.get("InstalledOn").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+            title: e.get("Title").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+            kb_url,
         })
     }).collect()
 }
@@ -4161,11 +4203,45 @@ Get-PhysicalDisk | ForEach-Object {
     $we = 0
     $wear = 0
     if ($rc) {
-        if ($rc.Temperature -gt 0) { $temp = "$($rc.Temperature) C" }
-        $poh = if ($rc.PowerOnHours) { $rc.PowerOnHours } else { 0 }
-        $re = if ($rc.ReadErrorsTotal) { $rc.ReadErrorsTotal } else { 0 }
-        $we = if ($rc.WriteErrorsTotal) { $rc.WriteErrorsTotal } else { 0 }
-        $wear = if ($rc.Wear) { $rc.Wear } else { 0 }
+        if ($rc.Temperature -and $rc.Temperature -gt 0) { $temp = "$($rc.Temperature) C" }
+        $poh = if ($rc.PowerOnHours -and $rc.PowerOnHours -gt 0) { $rc.PowerOnHours } else { 0 }
+        $re = if ($rc.ReadErrorsTotal) { $rc.ReadErrorsTotal } else { if ($rc.ReadErrorsCorrected) { $rc.ReadErrorsCorrected } else { 0 } }
+        $we = if ($rc.WriteErrorsTotal) { $rc.WriteErrorsTotal } else { if ($rc.WriteErrorsCorrected) { $rc.WriteErrorsCorrected } else { 0 } }
+        $wear = if ($rc.Wear -and $rc.Wear -gt 0) { $rc.Wear } else { 0 }
+    }
+    # Fallback: try MSFT_Disk WMI for additional data
+    if ($poh -eq 0) {
+        try {
+            $wmiDisk = Get-CimInstance -Namespace root\Microsoft\Windows\Storage -ClassName MSFT_Disk -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -eq $disk.FriendlyName } | Select-Object -First 1
+            if ($wmiDisk -and $wmiDisk.OperationalStatus -eq 1) {}
+        } catch {}
+    }
+    # Fallback: try Win32_DiskDrive for S.M.A.R.T. via WMI
+    if ($poh -eq 0 -or $temp -eq 'N/A') {
+        try {
+            $sn = $disk.SerialNumber -replace '\s',''
+            $wmi = Get-CimInstance -ClassName Win32_DiskDrive -ErrorAction SilentlyContinue | Where-Object { ($_.SerialNumber -replace '\s','') -eq $sn } | Select-Object -First 1
+            if ($wmi) {
+                # Try MSStorageDriver_ATAPISmartData for raw SMART
+                $ns = "root\WMI"
+                $smart = Get-CimInstance -Namespace $ns -ClassName MSStorageDriver_FailurePredictData -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($smart -and $smart.VendorSpecific) {
+                    $bytes = $smart.VendorSpecific
+                    # SMART attribute parsing: each attribute is 12 bytes, starting at offset 2
+                    for ($i = 2; $i -lt $bytes.Count; $i += 12) {
+                        $id = $bytes[$i]
+                        if ($id -eq 0) { break }
+                        $raw = [BitConverter]::ToUInt32($bytes, ($i + 5))
+                        # ID 9 = Power On Hours
+                        if ($id -eq 9 -and $poh -eq 0) { $poh = $raw }
+                        # ID 194 = Temperature
+                        if ($id -eq 194 -and $temp -eq 'N/A') { $temp = "$raw C" }
+                        # ID 177 or 231 = Wear Leveling Count (SSDs)
+                        if (($id -eq 177 -or $id -eq 231) -and $wear -eq 0) { $wear = $raw }
+                    }
+                }
+            }
+        } catch {}
     }
     # Compute health like CrystalDiskInfo: 100 - wear percentage
     $healthPct = 100

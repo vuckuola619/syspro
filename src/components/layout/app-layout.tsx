@@ -24,7 +24,7 @@ export function AppLayout() {
             />
           )}
           <ScrollArea className="h-full relative z-10">
-            <div className="p-8">
+            <div className="p-6">
               <Outlet />
             </div>
           </ScrollArea>
