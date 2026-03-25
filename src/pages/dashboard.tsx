@@ -21,8 +21,10 @@ import {
   Package,
   Monitor,
   Wifi,
+  Download,
 } from "lucide-react"
 import { NavLink } from "react-router-dom"
+import { toast } from "sonner"
 
 interface SystemOverview {
   cpu_name: string
@@ -159,6 +161,25 @@ export default function DashboardPage() {
     }
   }
 
+  async function exportISOReport() {
+    try {
+      const toastId = toast.loading("Generating ISO 27001 Report...")
+      const report = await invoke<string>("generate_iso27001_report")
+      const blob = new Blob([report], { type: "text/plain" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `SABI_ISO27001_Audit_${new Date().toISOString().split('T')[0]}.txt`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success("Audit report exported successfully", { id: toastId })
+    } catch (e) {
+      toast.error(`Export failed: ${e}`)
+    }
+  }
+
   const ramPercent = overview ? overview.ram_usage_percent : 0
   const totalJunkMb = junkResult ? junkResult.categories.reduce((s, c) => s + c.size_mb, 0) : health.junk_files_mb
   const totalJunkFiles = junkResult ? junkResult.categories.reduce((s, c) => s + c.files_count, 0) : 0
@@ -233,7 +254,7 @@ export default function DashboardPage() {
                 <span className="text-muted-foreground">Usage</span>
                 <span className="font-medium">{overview?.cpu_usage.toFixed(1) || 0}%</span>
               </div>
-              <Progress value={overview?.cpu_usage || 0} indicatorClassName={(overview?.cpu_usage || 0) > 80 ? "bg-red-50 dark:bg-red-500/100" : "bg-blue-50 dark:bg-blue-500/100"} />
+              <Progress value={overview?.cpu_usage || 0} indicatorClassName={(overview?.cpu_usage || 0) > 80 ? "bg-red-500" : "bg-blue-500"} />
             </div>
           </CardContent>
         </Card>
@@ -256,7 +277,7 @@ export default function DashboardPage() {
                 <span className="text-muted-foreground">Usage</span>
                 <span className="font-medium">{ramPercent.toFixed(1)}%</span>
               </div>
-              <Progress value={ramPercent} indicatorClassName={ramPercent > 85 ? "bg-red-50 dark:bg-red-500/100" : "bg-violet-50 dark:bg-violet-500/100"} />
+              <Progress value={ramPercent} indicatorClassName={ramPercent > 85 ? "bg-red-500" : "bg-violet-500"} />
             </div>
           </CardContent>
         </Card>
@@ -281,7 +302,7 @@ export default function DashboardPage() {
                     <span className="text-muted-foreground">{disk.mount_point} ({disk.fs_type})</span>
                     <span className="font-medium">{disk.free_gb.toFixed(1)} GB free</span>
                   </div>
-                  <Progress value={disk.usage_percent} className="h-2" indicatorClassName={disk.usage_percent > 90 ? "bg-red-50 dark:bg-red-500/100" : "bg-emerald-50 dark:bg-emerald-500/100"} />
+                  <Progress value={disk.usage_percent} className="h-2 bg-secondary" indicatorClassName={disk.usage_percent > 90 ? "bg-red-500" : "bg-emerald-500"} />
                 </div>
               ))}
             </div>
@@ -346,8 +367,11 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 gap-4">
         {overview && (
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-base flex items-center gap-2"><Monitor className="h-4 w-4" /> System Information</CardTitle>
+              <Button variant="outline" size="sm" onClick={exportISOReport} className="h-8 gap-1.5 text-xs">
+                <Download className="h-3 w-3" /> ISO 27001 Report
+              </Button>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">

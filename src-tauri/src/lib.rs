@@ -4198,16 +4198,16 @@ Get-PhysicalDisk | ForEach-Object {
     $disk = $_
     $rc = $_ | Get-StorageReliabilityCounter -ErrorAction SilentlyContinue
     $temp = 'N/A'
-    $poh = 0
-    $re = 0
-    $we = 0
-    $wear = 0
+    $poh = -1
+    $re = -1
+    $we = -1
+    $wear = -1
     if ($rc) {
         if ($rc.Temperature -and $rc.Temperature -gt 0) { $temp = "$($rc.Temperature) C" }
-        $poh = if ($rc.PowerOnHours -and $rc.PowerOnHours -gt 0) { $rc.PowerOnHours } else { 0 }
-        $re = if ($rc.ReadErrorsTotal) { $rc.ReadErrorsTotal } else { if ($rc.ReadErrorsCorrected) { $rc.ReadErrorsCorrected } else { 0 } }
-        $we = if ($rc.WriteErrorsTotal) { $rc.WriteErrorsTotal } else { if ($rc.WriteErrorsCorrected) { $rc.WriteErrorsCorrected } else { 0 } }
-        $wear = if ($rc.Wear -and $rc.Wear -gt 0) { $rc.Wear } else { 0 }
+        $poh = if ($null -ne $rc.PowerOnHours) { $rc.PowerOnHours } else { -1 }
+        $re = if ($null -ne $rc.ReadErrorsTotal) { $rc.ReadErrorsTotal } else { if ($null -ne $rc.ReadErrorsCorrected) { $rc.ReadErrorsCorrected } else { -1 } }
+        $we = if ($null -ne $rc.WriteErrorsTotal) { $rc.WriteErrorsTotal } else { if ($null -ne $rc.WriteErrorsCorrected) { $rc.WriteErrorsCorrected } else { -1 } }
+        $wear = if ($null -ne $rc.Wear) { $rc.Wear } else { -1 }
     }
     # Fallback: try MSFT_Disk WMI for additional data
     if ($poh -eq 0) {
@@ -4217,7 +4217,7 @@ Get-PhysicalDisk | ForEach-Object {
         } catch {}
     }
     # Fallback: try Win32_DiskDrive for S.M.A.R.T. via WMI
-    if ($poh -eq 0 -or $temp -eq 'N/A') {
+    if ($poh -eq -1 -or $temp -eq 'N/A') {
         try {
             $sn = $disk.SerialNumber -replace '\s',''
             $wmi = Get-CimInstance -ClassName Win32_DiskDrive -ErrorAction SilentlyContinue | Where-Object { ($_.SerialNumber -replace '\s','') -eq $sn } | Select-Object -First 1
@@ -4233,11 +4233,11 @@ Get-PhysicalDisk | ForEach-Object {
                         if ($id -eq 0) { break }
                         $raw = [BitConverter]::ToUInt32($bytes, ($i + 5))
                         # ID 9 = Power On Hours
-                        if ($id -eq 9 -and $poh -eq 0) { $poh = $raw }
+                        if ($id -eq 9 -and $poh -eq -1) { $poh = $raw }
                         # ID 194 = Temperature
                         if ($id -eq 194 -and $temp -eq 'N/A') { $temp = "$raw C" }
                         # ID 177 or 231 = Wear Leveling Count (SSDs)
-                        if (($id -eq 177 -or $id -eq 231) -and $wear -eq 0) { $wear = $raw }
+                        if (($id -eq 177 -or $id -eq 231) -and $wear -eq -1) { $wear = $raw }
                     }
                 }
             }
@@ -4246,6 +4246,9 @@ Get-PhysicalDisk | ForEach-Object {
     # Compute health like CrystalDiskInfo: 100 - wear percentage
     $healthPct = 100
     if ($wear -gt 0 -and $wear -le 100) { $healthPct = 100 - $wear }
+    # Also if re or we > 0, decrease
+    if ($re -gt 0) { $healthPct -= 5 }
+    if ($we -gt 0) { $healthPct -= 5 }
     # If Status isn't Healthy, cap at 50
     if ($disk.HealthStatus -ne 'Healthy') { $healthPct = [math]::Min($healthPct, 50) }
     [PSCustomObject]@{
@@ -4288,13 +4291,13 @@ Get-PhysicalDisk | ForEach-Object {
     
     entries.iter().map(|e| {
         let status = e.get("Status").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string();
-        let wear = e.get("Wear").and_then(|v| v.as_u64()).unwrap_or(0);
-        let read_errors = e.get("ReadErrors").and_then(|v| v.as_u64()).unwrap_or(0);
-        let write_errors = e.get("WriteErrors").and_then(|v| v.as_u64()).unwrap_or(0);
-        let power_on_hours = e.get("PowerOnHours").and_then(|v| v.as_u64()).unwrap_or(0);
+        let wear = e.get("Wear").and_then(|v| v.as_i64()).unwrap_or(-1);
+        let read_errors = e.get("ReadErrors").and_then(|v| v.as_i64()).unwrap_or(-1);
+        let write_errors = e.get("WriteErrors").and_then(|v| v.as_i64()).unwrap_or(-1);
+        let power_on_hours = e.get("PowerOnHours").and_then(|v| v.as_i64()).unwrap_or(-1);
         
         // Detect if SMART data is actually available
-        let has_smart_data = power_on_hours > 0 || read_errors > 0 || write_errors > 0 || wear > 0;
+        let has_smart_data = power_on_hours != -1 || read_errors != -1 || write_errors != -1 || wear != -1;
         
         // Use health percentage computed by PowerShell (matches CrystalDiskInfo: 100 - wear)
         let health_percent = e.get("HealthPct").and_then(|v| v.as_u64()).unwrap_or(100) as u32;
