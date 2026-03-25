@@ -82,12 +82,17 @@ export default function DiskHealthPage() {
                 <div key={j} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
                   <span className="text-xs text-muted-foreground">{a.name}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium">{a.value}</span>
-                    <div className={`h-2 w-2 rounded-full ${a.status === "OK" ? "bg-emerald-50 dark:bg-emerald-500/100" : "bg-amber-50 dark:bg-amber-500/100"}`} />
+                    <span className={`text-xs font-medium ${a.value === "N/A" ? "text-muted-foreground/50" : ""}`}>{a.value}</span>
+                    <div className={`h-2 w-2 rounded-full ${a.status === "OK" ? "bg-emerald-500" : "bg-amber-500"}`} />
                   </div>
                 </div>
               ))}
             </div>
+            {d.attributes.every(a => a.value === "N/A") && (
+              <p className="text-[11px] text-muted-foreground/60 text-center mt-1">
+                💡 Run SABI as Administrator for detailed S.M.A.R.T. data on NVMe/SSD drives
+              </p>
+            )}
           </CardContent>
         </Card>
       ))}

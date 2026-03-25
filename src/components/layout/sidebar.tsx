@@ -42,7 +42,6 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import { useState, useMemo, useRef, useEffect } from "react"
 
 type NavItem = { name: string; href: string; icon: any; category: string }
@@ -143,19 +142,7 @@ export function Sidebar() {
   const displayCategories = categories.filter(c => c !== "All")
 
   return (
-    <div className="flex h-full w-[240px] flex-col border-r bg-card shrink-0">
-      <div className="flex h-14 items-center gap-2.5 px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-          <Cpu className="h-4.5 w-4.5 text-white" />
-        </div>
-        <div className="flex flex-col">
-          <span className="text-sm font-semibold tracking-tight text-foreground">SABI</span>
-          <span className="text-[10px] text-muted-foreground">v1.0.0</span>
-        </div>
-      </div>
-
-      <Separator />
-
+    <div className="flex h-full w-[210px] flex-col border-r bg-card shrink-0">
       {/* Search Box */}
       <div className="px-3 pt-3">
         <div className="relative">

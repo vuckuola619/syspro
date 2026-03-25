@@ -4293,15 +4293,28 @@ Get-PhysicalDisk | ForEach-Object {
         let write_errors = e.get("WriteErrors").and_then(|v| v.as_u64()).unwrap_or(0);
         let power_on_hours = e.get("PowerOnHours").and_then(|v| v.as_u64()).unwrap_or(0);
         
+        // Detect if SMART data is actually available
+        let has_smart_data = power_on_hours > 0 || read_errors > 0 || write_errors > 0 || wear > 0;
+        
         // Use health percentage computed by PowerShell (matches CrystalDiskInfo: 100 - wear)
         let health_percent = e.get("HealthPct").and_then(|v| v.as_u64()).unwrap_or(100) as u32;
         
-        let attributes = vec![
-            SmartAttribute { name: "Power On Hours".into(), value: format!("{} hrs", power_on_hours), status: "OK".into() },
-            SmartAttribute { name: "Read Errors".into(), value: read_errors.to_string(), status: if read_errors > 0 { "Warning".into() } else { "OK".into() } },
-            SmartAttribute { name: "Write Errors".into(), value: write_errors.to_string(), status: if write_errors > 0 { "Warning".into() } else { "OK".into() } },
-            SmartAttribute { name: "Wear Level".into(), value: format!("{}%", wear), status: if wear > 50 { "Warning".into() } else { "OK".into() } },
-        ];
+        // Show "N/A" instead of "0" when SMART data is not available
+        let attributes = if has_smart_data {
+            vec![
+                SmartAttribute { name: "Power On Hours".into(), value: format!("{} hrs", power_on_hours), status: "OK".into() },
+                SmartAttribute { name: "Read Errors".into(), value: read_errors.to_string(), status: if read_errors > 0 { "Warning".into() } else { "OK".into() } },
+                SmartAttribute { name: "Write Errors".into(), value: write_errors.to_string(), status: if write_errors > 0 { "Warning".into() } else { "OK".into() } },
+                SmartAttribute { name: "Wear Level".into(), value: format!("{}%", wear), status: if wear > 50 { "Warning".into() } else { "OK".into() } },
+            ]
+        } else {
+            vec![
+                SmartAttribute { name: "Power On Hours".into(), value: "N/A".into(), status: "OK".into() },
+                SmartAttribute { name: "Read Errors".into(), value: "N/A".into(), status: "OK".into() },
+                SmartAttribute { name: "Write Errors".into(), value: "N/A".into(), status: "OK".into() },
+                SmartAttribute { name: "Wear Level".into(), value: "N/A".into(), status: "OK".into() },
+            ]
+        };
         
         DiskHealthInfo {
             model: e.get("Model").and_then(|v| v.as_str()).unwrap_or("").to_string(),

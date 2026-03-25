@@ -37,7 +37,7 @@ export const ACCENT_OPTIONS = Object.keys(ACCENT_COLORS)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>(() =>
-    (localStorage.getItem("sp-theme") as ThemeMode) || "dark"
+    (localStorage.getItem("sp-theme") as ThemeMode) || "light"
   )
   const [backgroundImage, setBgState] = useState<string | null>(() =>
     localStorage.getItem("sp-bg-image")
