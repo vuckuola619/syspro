@@ -99,3 +99,4 @@ Moved `if (!settings.enabled) return null` **after** all hooks (`useState`, `use
 4. **Keep imports clean** — remove unused imports immediately when refactoring
 5. **Tauri window config changes** require a full rebuild to take effect
 6. **WebView2 behavior differs** between dev and production — never assume JS APIs work the same way
+7. **React hooks must come FIRST** in every component — never place `if (...) return null` before `useState`, `useEffect`, `useRef`, `useCallback`, or `useMemo`
