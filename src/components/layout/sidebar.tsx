@@ -59,7 +59,7 @@ const navigation: NavItem[] = [
   // Overview
   { name: "Dashboard", href: "/", icon: LayoutDashboard, category: "Overview" },
   { name: "One-Click Optimize", href: "/one-click", icon: Zap, category: "Overview" },
-  { name: "Smart Optimize", href: "/smart-optimize", icon: Sparkles, category: "Overview" },
+
   // Cleaning
   { name: "Junk Cleaner", href: "/junk-cleaner", icon: Trash2, category: "Cleaning" },
   { name: "Registry Cleaner", href: "/registry", icon: Database, category: "Cleaning" },
@@ -72,8 +72,7 @@ const navigation: NavItem[] = [
   { name: "Live Monitor", href: "/live-monitor", icon: AreaChart, category: "Performance" },
   { name: "Turbo Boost", href: "/turbo-boost", icon: Zap, category: "Performance" },
   { name: "Benchmarks", href: "/benchmarks", icon: Gauge, category: "Performance" },
-  { name: "CPU Saver", href: "/cpu-saver", icon: CpuGauge, category: "Performance" },
-  { name: "Smart Clean", href: "/smart-clean", icon: Sparkles, category: "Performance" },
+  { name: "Auto Clean", href: "/smart-clean", icon: Sparkles, category: "Performance" },
   // Privacy & Security
   { name: "Privacy Eraser", href: "/privacy", icon: Shield, category: "Privacy & Security" },
   { name: "Privacy Hardening", href: "/privacy-hardening", icon: Lock, category: "Privacy & Security" },

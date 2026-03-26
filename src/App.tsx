@@ -1,8 +1,9 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { AppLayout } from "@/components/layout/app-layout"
 import { lazy, Suspense, useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { openUrl } from "@tauri-apps/plugin-opener"
+import { AIProvider } from "@/context/ai-context"
 
 // ─── Lazy-loaded pages (code-split for faster startup) ───
 const DashboardPage = lazy(() => import("@/pages/dashboard"))
@@ -48,7 +49,7 @@ const DiskHealthPage = lazy(() => import("@/pages/disk-health"))
 const ExportReportPage = lazy(() => import("@/pages/export-report"))
 const LargeFileFinderPage = lazy(() => import("@/pages/large-file-finder"))
 const EmptyFolderScannerPage = lazy(() => import("@/pages/empty-folder-scanner"))
-const CpuSaverPage = lazy(() => import("@/pages/cpu-saver"))
+
 const SmartCleanPage = lazy(() => import("@/pages/smart-clean"))
 const AppJunkPage = lazy(() => import("@/pages/app-junk"))
 const BrowserExtensionsPage = lazy(() => import("@/pages/browser-extensions"))
@@ -59,7 +60,7 @@ const LoginMonitorPage = lazy(() => import("@/pages/login-monitor"))
 const FileRecoveryPage = lazy(() => import("@/pages/file-recovery"))
 const CloudCleanerPage = lazy(() => import("@/pages/cloud-cleaner"))
 const MultiUserPage = lazy(() => import("@/pages/multi-user"))
-const SmartOptimizePage = lazy(() => import("@/pages/smart-optimize"))
+
 
 // ─── Loading Skeleton ───
 function PageSkeleton() {
@@ -151,6 +152,7 @@ function App() {
   }, [])
 
   return (
+    <AIProvider>
     <BrowserRouter>
       {updateInfo && !dismissed && (
         <UpdateBanner info={updateInfo} onDismiss={() => setDismissed(true)} />
@@ -199,7 +201,7 @@ function App() {
           <Route path="/export-report" element={<Suspense fallback={<PageSkeleton />}><ExportReportPage /></Suspense>} />
           <Route path="/large-file-finder" element={<Suspense fallback={<PageSkeleton />}><LargeFileFinderPage /></Suspense>} />
           <Route path="/empty-folder-scanner" element={<Suspense fallback={<PageSkeleton />}><EmptyFolderScannerPage /></Suspense>} />
-          <Route path="/cpu-saver" element={<Suspense fallback={<PageSkeleton />}><CpuSaverPage /></Suspense>} />
+          <Route path="/cpu-saver" element={<Navigate to="/turbo-boost" replace />} />
           <Route path="/smart-clean" element={<Suspense fallback={<PageSkeleton />}><SmartCleanPage /></Suspense>} />
           <Route path="/app-junk" element={<Suspense fallback={<PageSkeleton />}><AppJunkPage /></Suspense>} />
           <Route path="/browser-extensions" element={<Suspense fallback={<PageSkeleton />}><BrowserExtensionsPage /></Suspense>} />
@@ -210,11 +212,12 @@ function App() {
           <Route path="/file-recovery" element={<Suspense fallback={<PageSkeleton />}><FileRecoveryPage /></Suspense>} />
           <Route path="/cloud-cleaner" element={<Suspense fallback={<PageSkeleton />}><CloudCleanerPage /></Suspense>} />
           <Route path="/multi-user" element={<Suspense fallback={<PageSkeleton />}><MultiUserPage /></Suspense>} />
-          <Route path="/smart-optimize" element={<Suspense fallback={<PageSkeleton />}><SmartOptimizePage /></Suspense>} />
+          <Route path="/smart-optimize" element={<Navigate to="/" replace />} />
           <Route path="/settings" element={<Suspense fallback={<PageSkeleton />}><SettingsPage /></Suspense>} />
         </Route>
       </Routes>
     </BrowserRouter>
+    </AIProvider>
   )
 }
 

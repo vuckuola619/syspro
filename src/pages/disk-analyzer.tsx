@@ -214,17 +214,36 @@ export default function DiskAnalyzerPage() {
                     <div className="border-t bg-muted/10">
                       {folder.children.map((child) => (
                         <div key={child.path} className="flex items-center gap-3 px-4 py-2 pl-14">
-                          <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <div
+                            className="flex h-7 w-7 items-center justify-center rounded-md shrink-0"
+                            style={{ backgroundColor: COLORS[i % COLORS.length] + "10" }}
+                          >
+                            <Folder className="h-3.5 w-3.5" style={{ color: COLORS[i % COLORS.length], opacity: 0.7 }} />
+                          </div>
                           <p className="text-xs truncate flex-1 text-muted-foreground">{child.name}</p>
                           <span className="text-xs font-medium shrink-0">{formatSize(child.size_mb)}</span>
-                          <Button
-                            variant="ghost" size="sm"
-                            className="h-6 w-6 p-0 text-muted-foreground hover:text-blue-600"
-                            onClick={() => openFolder(child.path)}
-                            title="Open in Explorer"
-                          >
-                            <FolderOpen className="h-3 w-3" />
-                          </Button>
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            <Button
+                              variant="ghost" size="sm"
+                              className="h-6 w-6 p-0 text-muted-foreground hover:text-blue-600"
+                              onClick={() => openFolder(child.path)}
+                              title="Open in Explorer"
+                            >
+                              <FolderOpen className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost" size="sm"
+                              className="h-6 w-6 p-0 text-muted-foreground hover:text-red-600"
+                              onClick={() => deleteFolder(child.path, child.name)}
+                              disabled={deleting === child.path}
+                              title="Delete subfolder"
+                            >
+                              {deleting === child.path
+                                ? <RefreshCw className="h-3 w-3 animate-spin" />
+                                : <Trash2 className="h-3 w-3" />
+                              }
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>

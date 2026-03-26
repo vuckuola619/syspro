@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import {
   HardDrive,
@@ -18,11 +19,15 @@ import {
   Rocket,
   RefreshCw,
   Database,
-  Package,
-  Monitor,
   Wifi,
+  Sparkles,
+  AlertTriangle,
+  CheckCircle,
+  Zap,
 } from "lucide-react"
 import { NavLink } from "react-router-dom"
+import { toast } from "sonner"
+import { AIAnalysis } from "@/components/ai-assistant"
 
 interface SystemOverview {
   cpu_name: string
@@ -73,6 +78,20 @@ interface NetworkSpeed {
   bytes_received: number
 }
 
+/* ── Smart Analyze types (merged from Smart Optimize) ── */
+interface ScoreCategory {
+  name: string; score: number; max_score: number; status: string
+}
+interface Recommendation {
+  title: string; description: string; impact: string; category: string; auto_fixable: boolean
+}
+interface OptimizationScore {
+  overall_score: number; grade: string; categories: ScoreCategory[]; recommendations: Recommendation[]
+}
+
+const IMPACT_COLORS: Record<string, string> = { Critical: "#ef4444", High: "#f97316", Medium: "#eab308", Low: "#22c55e" }
+const GRADE_COLORS: Record<string, string> = { "A+": "#22c55e", A: "#22c55e", B: "#3b82f6", C: "#eab308", D: "#f97316", F: "#ef4444" }
+
 function ScoreRing({ score }: { score: number }) {
   const circumference = 2 * Math.PI * 58
   const offset = circumference - (score / 100) * circumference
@@ -110,6 +129,9 @@ export default function DashboardPage() {
   const [startupItems, setStartupItems] = useState<StartupItem[]>([])
   const [networkSpeeds, setNetworkSpeeds] = useState<NetworkSpeed[]>([])
   const [registryIssues, setRegistryIssues] = useState<number>(0)
+  // Smart Analyze (merged from Smart Optimize)
+  const [optScore, setOptScore] = useState<OptimizationScore | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   useEffect(() => {
     loadSystemInfo()
@@ -157,6 +179,16 @@ export default function DashboardPage() {
     } finally {
       setIsScanning(false)
     }
+  }
+
+  async function runSmartAnalyze() {
+    setIsAnalyzing(true)
+    try {
+      const data = await invoke<OptimizationScore>("get_optimization_score")
+      setOptScore(data)
+      toast.success(`Smart Analyze: ${data.overall_score}/100 — Grade ${data.grade}`)
+    } catch (e) { toast.error(String(e)) }
+    finally { setIsAnalyzing(false) }
   }
 
   const ramPercent = overview ? overview.ram_usage_percent : 0
@@ -342,46 +374,98 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* System Details + Quick Actions */}
-      <div className="grid grid-cols-2 gap-4">
-        {overview && (
+      {/* ── Smart Analyze Section (merged from Smart Optimize) ── */}
+      <Card className="cursor-pointer hover:border-primary/30 transition-colors" onClick={runSmartAnalyze}>
+        <CardContent className="flex items-center gap-3 p-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-50 dark:bg-purple-500/10">
+            {isAnalyzing ? <RefreshCw className="h-5 w-5 text-purple-600 animate-spin" /> : <Sparkles className="h-5 w-5 text-purple-600" />}
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium">{isAnalyzing ? "Analyzing system..." : "Smart Analyze"}</p>
+            <p className="text-xs text-muted-foreground">{optScore ? `Score: ${optScore.overall_score}/100 — Grade ${optScore.grade}` : "Click to run deep system analysis with recommendations"}</p>
+          </div>
+          {optScore && (
+            <span className="text-3xl font-bold" style={{ color: GRADE_COLORS[optScore.grade] || "#3b82f6" }}>{optScore.grade}</span>
+          )}
+        </CardContent>
+      </Card>
+
+      {optScore && (
+        <>
+          {/* Category breakdown */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2"><Monitor className="h-4 w-4" /> System Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
-                <InfoRow label="Hostname" value={overview.hostname} />
-                <InfoRow label="OS" value={`${overview.os_name} ${overview.os_version}`} />
-                <InfoRow label="Uptime" value={`${Math.floor(overview.uptime_hours)}h ${Math.round((overview.uptime_hours % 1) * 60)}m`} />
-                <InfoRow label="Startup Apps" value={`${enabledStartup} active / ${startupItems.length} total`} />
-              </div>
+            <CardContent className="p-4 space-y-2">
+              <p className="text-sm font-medium mb-3">Category Breakdown</p>
+              {optScore.categories.map(cat => (
+                <div key={cat.name} className="flex items-center gap-3 p-2 rounded-lg bg-muted/20">
+                  <span className="text-sm font-medium w-24">{cat.name}</span>
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${(cat.score / cat.max_score) * 100}%`,
+                        backgroundColor: cat.score >= cat.max_score * 0.75 ? "#22c55e" : cat.score >= cat.max_score * 0.5 ? "#eab308" : "#ef4444",
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs font-mono w-12 text-right">{cat.score}/{cat.max_score}</span>
+                  <span className="text-xs text-muted-foreground w-28 text-right">{cat.status}</span>
+                </div>
+              ))}
             </CardContent>
           </Card>
-        )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2"><Rocket className="h-4 w-4" /> Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { label: "One-Click Optimize", href: "/one-click", icon: <RefreshCw className="h-3.5 w-3.5" /> },
-                { label: "Clean Junk Files", href: "/junk-cleaner", icon: <Trash2 className="h-3.5 w-3.5" /> },
-                { label: "Fix Privacy", href: "/privacy", icon: <Shield className="h-3.5 w-3.5" /> },
-                { label: "Clean Registry", href: "/registry", icon: <Database className="h-3.5 w-3.5" /> },
-                { label: "Manage Startup", href: "/startup", icon: <Rocket className="h-3.5 w-3.5" /> },
-                { label: "Update Software", href: "/software-updater", icon: <Package className="h-3.5 w-3.5" /> },
-              ].map(a => (
-                <NavLink key={a.href} to={a.href} className="flex items-center gap-2 rounded-lg border px-3 py-2.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
-                  {a.icon} {a.label}
-                </NavLink>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          {/* Recommendations */}
+          {optScore.recommendations.length > 0 && (
+            <Card>
+              <CardContent className="p-4 space-y-2">
+                <p className="text-sm font-medium mb-3">Recommendations</p>
+                {optScore.recommendations.map((rec, i) => {
+                  const color = IMPACT_COLORS[rec.impact] || "#64748b"
+                  return (
+                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg border">
+                      {rec.impact === "Critical" || rec.impact === "High"
+                        ? <AlertTriangle className="h-4 w-4 mt-0.5" style={{ color }} />
+                        : <Zap className="h-4 w-4 mt-0.5" style={{ color }} />}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{rec.title}</span>
+                          <Badge style={{ backgroundColor: color + "20", color, border: `1px solid ${color}40` }} className="text-[10px]">{rec.impact}</Badge>
+                          {rec.auto_fixable && <Badge variant="outline" className="text-[10px]">Auto-fixable</Badge>}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{rec.description}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </CardContent>
+            </Card>
+          )}
+
+          {optScore.recommendations.length === 0 && (
+            <Card className="border-green-200 dark:border-green-500/20">
+              <CardContent className="p-4 flex items-center gap-3">
+                <CheckCircle className="h-5 w-5 text-green-500" />
+                <span className="text-sm font-medium text-green-700 dark:text-green-400">Your system is well optimized. No recommendations at this time.</span>
+              </CardContent>
+            </Card>
+          )}
+          {/* AI-Powered Remediation */}
+          <AIAnalysis
+            title="AI Remediation Suggestions"
+            context={[
+              overview ? `System: ${overview.cpu_name}, RAM: ${overview.ram_used_gb.toFixed(1)}/${overview.ram_total_gb.toFixed(1)} GB, CPU: ${overview.cpu_usage.toFixed(1)}%` : "",
+              optScore ? `Optimization Score: ${optScore.overall_score}/100 (Grade ${optScore.grade})` : "",
+              optScore ? `Categories: ${optScore.categories.map(c => `${c.name}: ${c.score}/${c.max_score} (${c.status})`).join(", ")}` : "",
+              optScore?.recommendations?.length ? `Issues found: ${optScore.recommendations.map(r => `[${r.impact}] ${r.title}: ${r.description}`).join("; ")}` : "",
+              health ? `Health Score: ${health.score}/100` : "",
+              junkResult ? `Junk Files: ${junkResult.total_size_mb.toFixed(1)} MB` : "",
+              registryIssues > 0 ? `Registry Issues: ${registryIssues}` : "",
+            ].filter(Boolean).join("\n")}
+            prompt="Based on these system scan results, what are the top remediation steps I should take? Prioritize by impact. Include specific steps for each suggestion."
+          />
+        </>
+      )}
     </div>
   )
 }
@@ -404,11 +488,4 @@ function QuickStat({ icon, label, value, sub, status, href }: {
   return href ? <NavLink to={href} className="hover:opacity-80 transition-opacity">{inner}</NavLink> : inner
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-muted-foreground">{label}</p>
-      <p className="font-medium">{value}</p>
-    </div>
-  )
-}
+

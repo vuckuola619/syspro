@@ -2,10 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
-import { Info, Sun, Moon, Monitor, Upload, X, Image, Globe, RefreshCw, CheckCircle2, Package, Download } from "lucide-react"
+import { Info, Sun, Moon, Monitor, Upload, X, Image, Globe, RefreshCw, CheckCircle2, Package, Download, Bot, Eye, EyeOff, AlertTriangle } from "lucide-react"
 import { useTheme, ACCENT_OPTIONS } from "@/context/theme-context"
 import { useI18n } from "@/context/i18n-context"
+import { useAI } from "@/context/ai-context"
 import { useRef, useState, useEffect } from "react"
+import { toast } from "sonner"
 import { invoke } from "@tauri-apps/api/core"
 import { getVersion } from "@tauri-apps/api/app"
 
@@ -17,10 +19,13 @@ interface AppUpdateInfo {
 export default function SettingsPage() {
   const { mode, setMode, backgroundImage, setBackgroundImage, backgroundOpacity, setBackgroundOpacity, accentColor, setAccentColor } = useTheme()
   const { locale, setLocale, t, availableLocales } = useI18n()
+  const { settings: aiSettings, updateSettings: updateAI } = useAI()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null)
   const [checking, setChecking] = useState(false)
   const [appVersion, setAppVersion] = useState("…")
+  const [showApiKey, setShowApiKey] = useState(false)
+  const [testingApi, setTestingApi] = useState(false)
 
   useEffect(() => {
     getVersion().then(v => setAppVersion(v)).catch(() => setAppVersion("1.1.1"))
@@ -262,6 +267,146 @@ export default function SettingsPage() {
             <div className="flex justify-between"><span className="text-muted-foreground">Frontend</span><span className="font-medium">React + ShadCN UI</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Backend</span><span className="font-medium">Rust</span></div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* ── AI Assistant Settings ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="h-5 w-5" /> AI Assistant
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {/* Enable toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Enable AI Assistant</p>
+              <p className="text-xs text-muted-foreground">Show floating AI chat button in the app</p>
+            </div>
+            <button
+              onClick={() => updateAI({ enabled: !aiSettings.enabled })}
+              className={`relative h-6 w-11 rounded-full transition-colors ${aiSettings.enabled ? "bg-primary" : "bg-muted"}`}
+            >
+              <span className={`block h-5 w-5 rounded-full bg-white shadow transition-transform ${aiSettings.enabled ? "translate-x-5" : "translate-x-0.5"}`} />
+            </button>
+          </div>
+
+          {aiSettings.enabled && (
+            <>
+              <Separator />
+
+              {/* Provider */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Provider</p>
+                  <p className="text-xs text-muted-foreground">Select your AI provider</p>
+                </div>
+                <select
+                  className="rounded-md border bg-muted/50 px-3 py-1.5 text-sm"
+                  value={aiSettings.provider}
+                  onChange={e => {
+                    const prov = e.target.value as "gemini" | "openai"
+                    updateAI({
+                      provider: prov,
+                      model: prov === "gemini" ? "gemini-2.0-flash" : "gpt-4o-mini"
+                    })
+                  }}
+                >
+                  <option value="gemini">Google Gemini</option>
+                  <option value="openai">OpenAI</option>
+                </select>
+              </div>
+
+              {/* Model */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Model</p>
+                  <p className="text-xs text-muted-foreground">
+                    {aiSettings.provider === "gemini" ? "Gemini model" : "OpenAI model"}
+                  </p>
+                </div>
+                <select
+                  className="rounded-md border bg-muted/50 px-3 py-1.5 text-sm"
+                  value={aiSettings.model}
+                  onChange={e => updateAI({ model: e.target.value })}
+                >
+                  {aiSettings.provider === "gemini" ? (
+                    <>
+                      <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                      <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="gpt-4o-mini">GPT-4o Mini</option>
+                      <option value="gpt-4o">GPT-4o</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              {/* API Key */}
+              <div className="space-y-2">
+                <div>
+                  <p className="text-sm font-medium">API Key</p>
+                  <p className="text-xs text-muted-foreground">
+                    {aiSettings.provider === "gemini"
+                      ? "Get from aistudio.google.com"
+                      : "Get from platform.openai.com"}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type={showApiKey ? "text" : "password"}
+                      className="w-full rounded-md border bg-muted/50 px-3 py-2 text-sm pr-10 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      placeholder={aiSettings.provider === "gemini" ? "AIzaSy..." : "sk-..."}
+                      value={aiSettings.apiKey}
+                      onChange={e => updateAI({ apiKey: e.target.value })}
+                    />
+                    <button
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                    >
+                      {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!aiSettings.apiKey || testingApi}
+                    onClick={async () => {
+                      setTestingApi(true)
+                      try {
+                        const { askAI } = await import("@/context/ai-context")
+                        await askAI(aiSettings, "You are a test.", "Say OK")
+                        toast.success("API connection successful!")
+                      } catch (e) {
+                        toast.error(`Connection failed: ${String(e)}`)
+                      } finally {
+                        setTestingApi(false)
+                      }
+                    }}
+                    className="gap-1 shrink-0"
+                  >
+                    {testingApi ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                    Test
+                  </Button>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Privacy disclaimer */}
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-xs">
+                <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-amber-800 dark:text-amber-300 space-y-1">
+                  <p className="font-medium">Privacy Notice</p>
+                  <p>When enabled, AI features send system info and questions to an external API ({aiSettings.provider === "gemini" ? "Google" : "OpenAI"}). Your API key is stored locally only and is never shared.</p>
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
