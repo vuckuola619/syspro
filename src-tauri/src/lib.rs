@@ -6647,6 +6647,20 @@ pub fn run() {
     
     info!("[SABI] Application starting...");
     
+    // Fix blank white screen when running as administrator.
+    // WebView2 cannot access the default user data directory when elevated.
+    // Setting WEBVIEW2_USER_DATA_FOLDER to a writable path that works in both contexts.
+    if std::env::var("WEBVIEW2_USER_DATA_FOLDER").is_err() {
+        let data_dir = std::path::PathBuf::from(
+            std::env::var("LOCALAPPDATA")
+                .or_else(|_| std::env::var("PROGRAMDATA"))
+                .unwrap_or_else(|_| "C:\\ProgramData".to_string())
+        ).join("SABI").join("WebView2");
+        std::fs::create_dir_all(&data_dir).ok();
+        std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", &data_dir);
+        info!("[SABI] WebView2 data folder set to: {:?}", data_dir);
+    }
+    
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
