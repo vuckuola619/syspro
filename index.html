@@ -7,10 +7,48 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <title>SystemPro</title>
+    <title>SABI</title>
+    <style>
+      /* Splash screen — renders instantly before React hydrates */
+      #splash {
+        position: fixed; inset: 0; z-index: 99999;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        background: #fafafa; font-family: 'Inter', system-ui, sans-serif;
+        transition: opacity 0.3s ease;
+      }
+      .dark #splash { background: #09090b; }
+      #splash.fade-out { opacity: 0; pointer-events: none; }
+      #splash svg { width: 48px; height: 48px; margin-bottom: 16px; }
+      #splash .splash-name {
+        font-size: 22px; font-weight: 700; letter-spacing: -0.5px;
+        color: #18181b;
+      }
+      .dark #splash .splash-name { color: #fafafa; }
+      #splash .splash-sub {
+        font-size: 11px; color: #a1a1aa; margin-top: 4px;
+        letter-spacing: 0.5px; text-transform: uppercase;
+      }
+      #splash .spinner {
+        margin-top: 24px; width: 24px; height: 24px;
+        border: 2.5px solid #e4e4e7; border-top-color: #3b82f6;
+        border-radius: 50%; animation: spin 0.7s linear infinite;
+      }
+      .dark #splash .spinner { border-color: #27272a; border-top-color: #60a5fa; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
   </head>
 
   <body>
+    <!-- Splash screen: visible immediately, fades out once React mounts -->
+    <div id="splash">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+      <span class="splash-name">SABI</span>
+      <span class="splash-sub">System Analytics & Boost Infrastructure</span>
+      <div class="spinner"></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

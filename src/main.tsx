@@ -17,3 +17,12 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     </I18nProvider>
   </React.StrictMode>
 )
+
+// Fade out splash screen once React has mounted
+requestAnimationFrame(() => {
+  const splash = document.getElementById("splash")
+  if (splash) {
+    splash.classList.add("fade-out")
+    setTimeout(() => splash.remove(), 350)
+  }
+})
