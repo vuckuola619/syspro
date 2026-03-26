@@ -71,6 +71,26 @@ Add `%USERPROFILE%\.cargo\bin` to the system PATH permanently via Windows Enviro
 
 ---
 
+## 4. White Screen When Enabling AI (React Hooks Violation)
+
+**Date:** 2026-03-26  
+**Status:** RESOLVED
+
+### Problem
+Toggling "Enable AI" in Settings caused the entire app to crash to a white blank screen.
+
+### Root Cause
+In `floating-ai-chat.tsx`, an early return (`if (!settings.enabled) return null`) was placed **before** a `useEffect` hook. This violates React's rules: hooks must always be called in the same order on every render. When AI was toggled from OFF → ON, React detected a different number of hooks and crashed.
+
+### Solution
+Moved `if (!settings.enabled) return null` **after** all hooks (`useState`, `useRef`, `useEffect`).
+
+### Prevention Rules
+> **NEVER place conditional returns (early returns) before any hooks in a React component.**  
+> **All `useState`, `useRef`, `useEffect`, `useCallback`, `useMemo` must come first — conditionals after.**
+
+---
+
 ## General Rules for SABI Development
 
 1. **Always test with `tauri build`**, not just `tauri dev` — they have different runtime behaviors
