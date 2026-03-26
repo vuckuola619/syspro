@@ -458,8 +458,8 @@ export default function DashboardPage() {
               optScore ? `Optimization Score: ${optScore.overall_score}/100 (Grade ${optScore.grade})` : "",
               optScore ? `Categories: ${optScore.categories.map(c => `${c.name}: ${c.score}/${c.max_score} (${c.status})`).join(", ")}` : "",
               optScore?.recommendations?.length ? `Issues found: ${optScore.recommendations.map(r => `[${r.impact}] ${r.title}: ${r.description}`).join("; ")}` : "",
-              health ? `Health Score: ${health.score}/100` : "",
-              junkResult ? `Junk Files: ${junkResult.total_size_mb.toFixed(1)} MB` : "",
+              health ? `Health Score: ${health.overall}/100` : "",
+              junkResult ? `Junk Files: ${junkResult.categories.reduce((s, c) => s + c.size_mb, 0).toFixed(1)} MB` : "",
               registryIssues > 0 ? `Registry Issues: ${registryIssues}` : "",
             ].filter(Boolean).join("\n")}
             prompt="Based on these system scan results, what are the top remediation steps I should take? Prioritize by impact. Include specific steps for each suggestion."

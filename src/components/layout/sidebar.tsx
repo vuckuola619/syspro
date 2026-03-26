@@ -41,7 +41,7 @@ import {
   FileDown,
   FileSearch,
   FolderMinus,
-  Gauge as CpuGauge,
+
   Sparkles,
   Puzzle,
   UserCheck,
