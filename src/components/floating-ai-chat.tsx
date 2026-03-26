@@ -10,8 +10,8 @@ interface Message {
 }
 
 /**
- * Floating AI Chat Button — appears bottom-right when enabled in Settings.
- * Provides a conversational AI assistant for system questions.
+ * Floating AI Analysis Button — appears bottom-right when enabled in Settings.
+ * Provides AI-powered analysis for system optimization and remediation.
  */
 export function FloatingAIChat() {
   const { settings, isConfigured } = useAI()
@@ -37,7 +37,7 @@ export function FloatingAIChat() {
         role: "user", content: input, timestamp: new Date()
       }, {
         role: "assistant",
-        content: "⚠️ Please configure your API key in Settings → AI Assistant first.",
+        content: "⚠️ Please configure your API key in Settings → AI Analysis first.",
         timestamp: new Date()
       }])
       setInput("")
@@ -57,7 +57,7 @@ export function FloatingAIChat() {
         systemInfo = `OS: ${overview.os_version}, CPU: ${overview.cpu_name}, RAM: ${overview.ram_total_gb.toFixed(1)} GB`
       } catch { /* fallback */ }
 
-      const systemPrompt = `You are SABI AI — a helpful Windows system optimization assistant built into the SABI app (System Analytics & Boost Infrastructure). The user's system: ${systemInfo}. Answer concisely and helpfully. If asked about SABI features, explain how to use them.`
+      const systemPrompt = `You are SABI AI — an expert Windows system optimization analyzer built into the SABI app (System Analytics & Boost Infrastructure). The user's system: ${systemInfo}. Analyze the user's query and system state to provide specific, actionable remediation steps and suggestions. Format each suggestion clearly and categorize by urgency if needed.`
 
       const response = await askAI(settings, systemPrompt, input)
       setMessages(prev => [...prev, {
@@ -82,7 +82,7 @@ export function FloatingAIChat() {
       <button
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95"
-        title="AI Assistant"
+        title="AI Analysis"
       >
         <Sparkles className="h-5 w-5" />
       </button>
@@ -98,7 +98,7 @@ export function FloatingAIChat() {
           <Sparkles className="h-4 w-4 text-primary" />
         </div>
         <div className="flex-1">
-          <p className="text-sm font-semibold">SABI AI</p>
+          <p className="text-sm font-semibold">AI Analysis</p>
           <p className="text-xs text-muted-foreground">{settings.model}</p>
         </div>
         <button onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-foreground">
@@ -117,13 +117,13 @@ export function FloatingAIChat() {
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Sparkles className="h-8 w-8 text-muted-foreground/40 mb-3" />
-            <p className="text-sm font-medium text-muted-foreground">How can I help?</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">Ask me anything about your system</p>
+            <p className="text-sm font-medium text-muted-foreground">System Analysis</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Get AI-powered remediation & suggestions</p>
             <div className="grid grid-cols-1 gap-1.5 mt-4 w-full">
               {[
-                "Why is my PC running slow?",
-                "How to free up disk space?",
-                "Explain my health score",
+                "Analyze current system health",
+                "Suggest ways to free up disk space",
+                "How to optimize startup apps?",
               ].map((q, i) => (
                 <button
                   key={i}
@@ -169,7 +169,7 @@ export function FloatingAIChat() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && sendMessage()}
-            placeholder={isConfigured ? "Ask anything..." : "Configure API key in Settings"}
+            placeholder={isConfigured ? "Ask for analysis or remediation..." : "Configure API key in Settings"}
             className="flex-1 rounded-xl border bg-muted/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
             disabled={loading}
           />

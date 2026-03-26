@@ -270,19 +270,19 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* ── AI Assistant Settings ── */}
+      {/* ── AI Analysis Settings ── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bot className="h-5 w-5" /> AI Assistant
+            <Sparkles className="h-5 w-5 text-primary" /> AI Analysis
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
           {/* Enable toggle */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium">Enable AI Assistant</p>
-              <p className="text-xs text-muted-foreground">Show floating AI chat button in the app</p>
+              <p className="text-sm font-medium">Enable AI Analysis</p>
+              <p className="text-xs text-muted-foreground">Show floating AI analysis button for remediation & suggestions</p>
             </div>
             <button
               onClick={() => updateAI({ enabled: !aiSettings.enabled })}
