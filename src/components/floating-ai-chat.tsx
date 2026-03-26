@@ -21,14 +21,14 @@ export function FloatingAIChat() {
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Only show if AI is enabled in settings
-  if (!settings.enabled) return null
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
   useEffect(() => { scrollToBottom() }, [messages])
+
+  // Only show if AI is enabled in settings (MUST be after all hooks)
+  if (!settings.enabled) return null
 
   async function sendMessage() {
     if (!input.trim() || loading) return
