@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] — 2026-03-26
+
+### 🔀 Module Merges
+
+| Change | Description |
+|:---|:---|
+| **CPU Saver → Turbo Boost** | Merged into tabbed UI: Turbo Mode (services + memory) \| Process Priority (Gaming Mode) |
+| **Smart Optimize → Dashboard** | Merged into Dashboard as "Smart Analyze" section (grade, category bars, recommendations) |
+| **Smart Clean → Auto Clean** | Renamed and enhanced with file impact breakdown |
+| **Sidebar** | Cleaned up redundant entries (46 → 44 tools) |
+
+### 🤖 AI Analysis (Opt-in)
+
+| Feature | Description |
+|:---|:---|
+| **Inline AIAnalysis** | Replaces floating chatbot — appears on scan result pages with severity-coded remediation steps |
+| **Settings** | Provider (Gemini/OpenAI), model selection (2.0 Flash, 2.5 Pro, GPT-4o Mini, GPT-4o), API key input |
+| **Privacy** | API keys stored in localStorage only — zero telemetry, user provides own key |
+
+### ✨ Enhancements
+
+| Feature | Description |
+|:---|:---|
+| **Auto Clean** | File impact breakdown after scan: Temp Files, Browser Cache, System Logs, Recycle Bin, Other — with distribution bars and file counts |
+| **Disk Analyzer** | Subfolder icons, "Delete" button per subfolder, "Open in Explorer" shortcuts |
+| **Turbo Boost** | New tabbed UI: Turbo Mode \| Process Priority with Gaming Mode |
+
+### 🐛 Bug Fixes
+
+| Fix | Description |
+|:---|:---|
+| **Blank White Screen (Admin)** | Fixed WebView2 data directory access issue when running as administrator — sets `WEBVIEW2_USER_DATA_FOLDER` env var before init |
+| **TypeScript Strict** | Removed unused imports (`CpuGauge`, `FileText`) that caused tsc build failures |
+
+### 📦 Release Assets
+
+| File | Description |
+|:---|:---|
+| `SABI_1.3.0_x64-setup.exe` | NSIS installer (recommended) |
+| `SABI_1.3.0_x64_en-US.msi` | MSI installer for enterprise/GPO |
+
+---
+
 ## [1.2.0] — 2026-03-26
 
 ### ✨ New Features (Tier 4 — Stretch)

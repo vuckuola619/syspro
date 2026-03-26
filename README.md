@@ -14,7 +14,7 @@
 
 <p align="center">
   A lightweight, high-performance <strong>PC Optimizer & System Toolkit</strong> for Windows.<br/>
-  Built with Rust and React to deliver native speed, modern UI, and 46+ system tools<br/>
+  Built with Rust and React to deliver native speed, modern UI, and 44+ system tools<br/>
   in a single ~3 MB application — no Electron, no bloat, no telemetry.
 </p>
 
@@ -43,9 +43,10 @@
 | **🎨 Modern UI** | Light/dark mode, glassmorphism, smooth animations via shadcn/ui |
 | **🔒 Privacy-first** | Zero telemetry, zero cloud, zero tracking — everything runs locally |
 | **🛡 Secure** | AES-256-GCM encryption, CSPRNG password generation, sanitized system calls |
-| **🛠 All-in-one** | 46 tools across 8 categories that replace multiple utility apps |
+| **🛠 All-in-one** | 44 tools across 8 categories that replace multiple utility apps |
+| **🤖 AI Analysis** | Opt-in AI remediation (Gemini/OpenAI) with severity-coded suggestions |
 | **📊 ISO 27001 Ready** | Built-in audit report generator for compliance documentation |
-| **🤖 Smart Scoring** | AI-powered system health scoring with actionable recommendations |
+| **🤖 Smart Scoring** | AI-powered system health scoring with grade-based recommendations |
 
 ---
 
@@ -53,8 +54,8 @@
 
 | Format | File | Description |
 |:---:|:---|:---|
-| 💿 | [`SABI_1.1.1_x64-setup.exe`](https://github.com/vuckuola619/syspro/releases/latest) | **Recommended** — NSIS installer with auto-update support |
-| 📦 | [`SABI_1.1.1_x64_en-US.msi`](https://github.com/vuckuola619/syspro/releases/latest) | MSI installer for enterprise / GPO deployment |
+| 💿 | [`SABI_1.3.0_x64-setup.exe`](https://github.com/vuckuola619/syspro/releases/latest) | **Recommended** — NSIS installer with auto-update support |
+| 📦 | [`SABI_1.3.0_x64_en-US.msi`](https://github.com/vuckuola619/syspro/releases/latest) | MSI installer for enterprise / GPO deployment |
 
 > **Requirements:** Windows 10/11 (64-bit) · WebView2 runtime (bundled)
 
@@ -66,9 +67,9 @@
 <tr><td>
 
 ### 📊 Overview
-- **Dashboard** — System health overview with key metrics
+- **Dashboard** — System health overview with key metrics + Smart Analyze (health grade, category breakdown, recommendations)
 - **One-Click Optimize** — Run all cleaners + optimizers in a single click
-- **Smart Optimize** — AI-powered system health scoring (0–100) with grade and actionable recommendations
+- **AI Analysis** — Opt-in inline AI remediation on scan results (Gemini/OpenAI) with severity-coded suggestions
 
 </td><td>
 
@@ -86,10 +87,9 @@
 - **Startup Manager** — Control boot programs, boot time analysis, context menu manager
 - **Performance Monitor** — Real-time CPU, RAM with optimization action log
 - **Live Monitor** — Continuous dashboard with history graphs
-- **Turbo Boost** — One-click mode (services + process optimization) with full restore
+- **Turbo Boost** — Tabbed UI: Turbo Mode (services + memory) | Process Priority (Gaming Mode)
 - **Benchmarks** — CPU, disk, and memory benchmark suite
-- **CPU Saver** — Detect and manage CPU-hungry background processes
-- **Smart Clean** — Intelligent cleaning with category-based junk analysis
+- **Auto Clean** — Smart cleaning with file impact breakdown (Temp, Browser, Logs, Recycle Bin)
 
 </td><td>
 
@@ -242,12 +242,12 @@ AG-SysPro/
 │   ├── components/
 │   │   ├── layout/               # Sidebar, TitleBar, AppLayout
 │   │   └── ui/                   # shadcn/ui primitives
-│   ├── pages/                    # 46 feature pages
+│   ├── pages/                    # 44 feature pages
 │   ├── lib/                      # Utilities
 │   └── App.tsx                   # Router + lazy-loaded pages
 ├── src-tauri/
 │   ├── src/
-│   │   └── lib.rs                # 6700+ line Rust backend (all commands)
+│   │   └── lib.rs                # 6780+ line Rust backend (all commands)
 │   ├── capabilities/
 │   │   └── default.json          # Tauri v2 permission grants
 │   ├── icons/                    # App icons
