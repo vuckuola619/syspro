@@ -1,6 +1,6 @@
 [package]
 name = "sabi"
-version = "1.1.1"
+version = "1.2.0"
 description = "SABI - System Analytics & Boost Infrastructure"
 authors = ["you"]
 edition = "2021"

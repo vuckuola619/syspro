@@ -4961,6 +4961,1684 @@ async fn generate_iso27001_report() -> Result<Iso27001Report, String> {
     Ok(Iso27001Report { txt, csv })
 }
 
+// =============================================================================
+// GAP FEATURE: Large File Finder
+// =============================================================================
+
+#[derive(Serialize)]
+struct LargeFileItem {
+    name: String,
+    path: String,
+    size_mb: f64,
+    size_bytes: u64,
+    extension: String,
+    category: String,
+    modified: String,
+}
+
+fn categorize_file(ext: &str) -> String {
+    match ext.to_lowercase().as_str() {
+        "mp4" | "mkv" | "avi" | "mov" | "wmv" | "flv" | "webm" => "Video".into(),
+        "iso" | "img" | "vhd" | "vhdx" | "vmdk" => "Disk Image".into(),
+        "zip" | "rar" | "7z" | "tar" | "gz" | "bz2" | "xz" => "Archive".into(),
+        "log" | "txt" | "csv" | "bak" | "old" | "tmp" => "Log / Temp".into(),
+        "exe" | "msi" | "msix" | "appx" => "Installer".into(),
+        "dll" | "sys" | "ocx" => "System".into(),
+        "psd" | "ai" | "indd" | "raw" | "cr2" | "nef" => "Design / RAW".into(),
+        "mp3" | "wav" | "flac" | "aac" | "ogg" | "wma" => "Audio".into(),
+        "pdf" | "doc" | "docx" | "xls" | "xlsx" | "ppt" | "pptx" => "Document".into(),
+        _ => "Other".into(),
+    }
+}
+
+#[tauri::command]
+async fn scan_large_files(target_dir: String, min_size_mb: u64) -> Result<Vec<LargeFileItem>, String> {
+    info!("[LargeFileFinder] Scanning for files >= {} MB in {}", min_size_mb, target_dir);
+
+    // Security: canonicalize path to prevent traversal
+    let canonical = std::fs::canonicalize(&target_dir)
+        .map_err(|e| format!("Invalid path: {}", e))?;
+
+    let min_bytes = min_size_mb * 1_048_576;
+    let mut files = Vec::new();
+
+    for entry in WalkDir::new(&canonical)
+        .max_depth(10)
+        .follow_links(false)
+        .into_iter()
+        .filter_map(|e| e.ok())
+    {
+        if !entry.file_type().is_file() { continue; }
+
+        if let Ok(metadata) = entry.metadata() {
+            let size = metadata.len();
+            if size >= min_bytes {
+                let path = entry.path();
+                let ext = path.extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or("")
+                    .to_string();
+
+                let modified = metadata.modified()
+                    .ok()
+                    .and_then(|t| {
+                        let duration = t.duration_since(std::time::UNIX_EPOCH).ok()?;
+                        let secs = duration.as_secs();
+                        // Simple date formatting
+                        let days = secs / 86400;
+                        let years = 1970 + days / 365;
+                        Some(format!("{}", years))
+                    })
+                    .unwrap_or_else(|| "Unknown".into());
+
+                files.push(LargeFileItem {
+                    name: path.file_name().unwrap_or_default().to_string_lossy().to_string(),
+                    path: path.to_string_lossy().to_string(),
+                    size_mb: size as f64 / 1_048_576.0,
+                    size_bytes: size,
+                    extension: ext.clone(),
+                    category: categorize_file(&ext),
+                    modified,
+                });
+            }
+        }
+    }
+
+    // Sort by size descending
+    files.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
+    files.truncate(200); // Cap at 200 results
+
+    info!("[LargeFileFinder] Found {} large files", files.len());
+    Ok(files)
+}
+
+#[tauri::command]
+async fn delete_file(file_path: String) -> Result<String, String> {
+    info!("[LargeFileFinder] Deleting file: {}", file_path);
+
+    let path = std::path::Path::new(&file_path);
+    if !path.exists() {
+        return Err("File not found".into());
+    }
+    if !path.is_file() {
+        return Err("Path is not a file".into());
+    }
+
+    // Security: refuse to delete system files
+    let canonical = std::fs::canonicalize(path)
+        .map_err(|e| format!("Invalid path: {}", e))?;
+    let canonical_str = canonical.to_string_lossy().to_lowercase();
+    if canonical_str.contains("\\windows\\") || canonical_str.contains("\\program files") {
+        return Err("Cannot delete system files".into());
+    }
+
+    let size = std::fs::metadata(&canonical)
+        .map(|m| m.len())
+        .unwrap_or(0);
+
+    std::fs::remove_file(&canonical)
+        .map_err(|e| format!("Failed to delete: {}", e))?;
+
+    let freed_mb = size as f64 / 1_048_576.0;
+    Ok(format!("Deleted. Freed {:.1} MB", freed_mb))
+}
+
+// =============================================================================
+// GAP FEATURE: Empty Folder Scanner
+// =============================================================================
+
+#[derive(Serialize)]
+struct EmptyFolderItem {
+    path: String,
+    name: String,
+    parent: String,
+}
+
+fn is_protected_folder(path: &std::path::Path) -> bool {
+    let s = path.to_string_lossy().to_lowercase();
+    let protected = [
+        "\\windows", "\\program files", "\\program files (x86)",
+        "\\programdata", "\\$recycle.bin", "\\system volume information",
+        "\\recovery", "\\boot", "\\.git", "\\node_modules",
+        "\\appdata\\local\\packages",
+    ];
+    protected.iter().any(|p| s.contains(p))
+}
+
+fn is_truly_empty(path: &std::path::Path) -> bool {
+    match std::fs::read_dir(path) {
+        Ok(mut entries) => entries.next().is_none(),
+        Err(_) => false,
+    }
+}
+
+#[tauri::command]
+async fn scan_empty_folders(target_dir: String) -> Result<Vec<EmptyFolderItem>, String> {
+    info!("[EmptyFolderScanner] Scanning for empty folders in {}", target_dir);
+
+    let canonical = std::fs::canonicalize(&target_dir)
+        .map_err(|e| format!("Invalid path: {}", e))?;
+
+    let mut empties = Vec::new();
+
+    for entry in WalkDir::new(&canonical)
+        .max_depth(10)
+        .follow_links(false)
+        .into_iter()
+        .filter_map(|e| e.ok())
+    {
+        let path = entry.path();
+
+        if !path.is_dir() { continue; }
+        if path == canonical { continue; } // Skip root
+        if is_protected_folder(path) { continue; }
+
+        // Skip hidden/system folders
+        #[cfg(windows)]
+        {
+            if let Ok(meta) = std::fs::metadata(path) {
+                use std::os::windows::fs::MetadataExt;
+                let attrs = meta.file_attributes();
+                // FILE_ATTRIBUTE_HIDDEN (0x2) or FILE_ATTRIBUTE_SYSTEM (0x4)
+                if attrs & 0x2 != 0 || attrs & 0x4 != 0 {
+                    continue;
+                }
+            }
+        }
+
+        if is_truly_empty(path) {
+            empties.push(EmptyFolderItem {
+                path: path.to_string_lossy().to_string(),
+                name: path.file_name().unwrap_or_default().to_string_lossy().to_string(),
+                parent: path.parent()
+                    .map(|p| p.to_string_lossy().to_string())
+                    .unwrap_or_default(),
+            });
+        }
+    }
+
+    info!("[EmptyFolderScanner] Found {} empty folders", empties.len());
+    Ok(empties)
+}
+
+#[tauri::command]
+async fn clean_empty_folders(paths: Vec<String>) -> Result<u32, String> {
+    info!("[EmptyFolderScanner] Cleaning {} empty folders", paths.len());
+    let mut deleted = 0u32;
+
+    for folder_path in &paths {
+        let path = std::path::Path::new(folder_path);
+
+        // Security checks
+        if !path.exists() || !path.is_dir() { continue; }
+        if is_protected_folder(path) { continue; }
+        if !is_truly_empty(path) { continue; } // Re-verify it's still empty
+
+        if std::fs::remove_dir(path).is_ok() {
+            deleted += 1;
+        }
+    }
+
+    info!("[EmptyFolderScanner] Deleted {} empty folders", deleted);
+    Ok(deleted)
+}
+
+// =============================================================================
+// GAP FEATURE: CPU Saver / Process Priority
+// =============================================================================
+
+#[derive(Serialize, Deserialize)]
+struct ProcessPriorityInfo {
+    pid: u32,
+    name: String,
+    cpu_usage: f64,
+    memory_mb: f64,
+    priority: String,
+}
+
+// System-critical processes that should never be modified
+fn is_protected_process(name: &str) -> bool {
+    let protected = [
+        "system", "system idle process", "csrss", "lsass", "services",
+        "svchost", "winlogon", "smss", "wininit", "dwm", "explorer",
+        "taskmgr", "registry", "memory compression", "ntoskrnl",
+        "audiodg", "fontdrvhost", "searchindexer",
+    ];
+    protected.iter().any(|p| name.to_lowercase().as_str() == *p)
+}
+
+#[tauri::command]
+async fn get_process_priorities() -> Vec<ProcessPriorityInfo> {
+    info!("[CpuSaver] Getting process priorities");
+    let mut sys = System::new_all();
+    std::thread::sleep(std::time::Duration::from_millis(300));
+    sys.refresh_all();
+
+    let mut procs: Vec<ProcessPriorityInfo> = sys.processes().iter().map(|(pid, proc_info)| {
+        ProcessPriorityInfo {
+            pid: pid.as_u32(),
+            name: proc_info.name().to_string_lossy().into_owned(),
+            cpu_usage: proc_info.cpu_usage() as f64,
+            memory_mb: proc_info.memory() as f64 / 1_048_576.0,
+            priority: "Normal".into(), // Default — PowerShell will get actual priority
+        }
+    }).collect();
+
+    // Sort by CPU usage descending
+    procs.sort_by(|a, b| b.cpu_usage.partial_cmp(&a.cpu_usage).unwrap_or(std::cmp::Ordering::Equal));
+    procs.truncate(100);
+
+    procs
+}
+
+#[tauri::command]
+async fn set_process_priority(pid: u32, priority: String) -> Result<String, String> {
+    info!("[CpuSaver] Setting PID {} to priority: {}", pid, priority);
+
+    // Validate priority level
+    let wmi_priority = match priority.to_lowercase().as_str() {
+        "idle" => "64",
+        "below normal" | "belownormal" => "16384",
+        "normal" => "32",
+        "above normal" | "abovenormal" => "32768",
+        "high" => "128",
+        "realtime" => return Err("Realtime priority is too dangerous and is not allowed.".into()),
+        _ => return Err(format!("Invalid priority: {}", priority)),
+    };
+
+    // Get process name first to check if it's protected
+    let check_script = format!(
+        "(Get-Process -Id {} -ErrorAction SilentlyContinue).ProcessName",
+        pid
+    );
+    let check_output = hidden_powershell()
+        .args(&["-Command", &check_script])
+        .output()
+        .map_err(|e| format!("Failed to check process: {}", e))?;
+
+    let proc_name = String::from_utf8_lossy(&check_output.stdout).trim().to_string();
+    if proc_name.is_empty() {
+        return Err("Process not found or has already exited.".into());
+    }
+    if is_protected_process(&proc_name) {
+        return Err(format!("Cannot modify priority of system-critical process: {}", proc_name));
+    }
+
+    // Set priority using wmic (works without admin for user-owned processes)
+    let cmd = format!(
+        "wmic process where ProcessId={} CALL setpriority {}",
+        pid, wmi_priority
+    );
+    let output = hidden_powershell()
+        .args(&["-Command", &cmd])
+        .output()
+        .map_err(|e| format!("Failed to set priority: {}", e))?;
+
+    let _stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if !output.status.success() || stderr.contains("Access") {
+        return Err("Access denied. Try running SABI as Administrator.".into());
+    }
+
+    info!("[CpuSaver] Successfully set {} (PID {}) to {}", proc_name, pid, priority);
+    Ok(format!("Set {} to {} priority", proc_name, priority))
+}
+
+// =============================================================================
+// GAP FEATURE: Smart Cleaning Config
+// =============================================================================
+
+#[derive(Serialize, Deserialize)]
+struct SmartCleanConfig {
+    enabled: bool,
+    threshold_mb: u64,
+    interval_minutes: u32,
+    auto_clean: bool,
+    last_scan: String,
+    last_junk_mb: f64,
+}
+
+#[tauri::command]
+async fn get_smart_clean_config() -> SmartCleanConfig {
+    // Read from localStorage via frontend; backend provides default
+    SmartCleanConfig {
+        enabled: false,
+        threshold_mb: 500,
+        interval_minutes: 30,
+        auto_clean: false,
+        last_scan: "Never".into(),
+        last_junk_mb: 0.0,
+    }
+}
+
+#[tauri::command]
+async fn quick_junk_scan() -> Result<f64, String> {
+    info!("[SmartClean] Running quick junk size estimation");
+
+    let mut total_bytes: u64 = 0;
+
+    // Temp folders
+    let temp_dirs = vec![
+        std::env::var("TEMP").unwrap_or_default(),
+        std::env::var("TMP").unwrap_or_default(),
+        format!("{}\\AppData\\Local\\Temp", std::env::var("USERPROFILE").unwrap_or_default()),
+    ];
+
+    for dir in temp_dirs {
+        if dir.is_empty() { continue; }
+        let path = std::path::Path::new(&dir);
+        if !path.exists() { continue; }
+        for entry in WalkDir::new(path).max_depth(3).into_iter().filter_map(|e| e.ok()) {
+            if entry.file_type().is_file() {
+                total_bytes += entry.metadata().map(|m| m.len()).unwrap_or(0);
+            }
+        }
+    }
+
+    // Browser caches (quick estimate)
+    let user = std::env::var("USERPROFILE").unwrap_or_default();
+    let cache_dirs = vec![
+        format!("{}\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Cache", user),
+        format!("{}\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default\\Cache", user),
+        format!("{}\\AppData\\Local\\Mozilla\\Firefox\\Profiles", user),
+    ];
+
+    for dir in cache_dirs {
+        let path = std::path::Path::new(&dir);
+        if !path.exists() { continue; }
+        for entry in WalkDir::new(path).max_depth(2).into_iter().filter_map(|e| e.ok()) {
+            if entry.file_type().is_file() {
+                total_bytes += entry.metadata().map(|m| m.len()).unwrap_or(0);
+            }
+        }
+    }
+
+    let total_mb = total_bytes as f64 / 1_048_576.0;
+    info!("[SmartClean] Quick scan found {:.1} MB of junk", total_mb);
+    Ok(total_mb)
+}
+
+// =============================================================================
+// GAP FEATURE: App-Specific Junk (UWP / MS Store)
+// =============================================================================
+
+#[derive(Serialize)]
+struct UwpJunkItem {
+    app_name: String,
+    package_name: String,
+    path: String,
+    size_mb: f64,
+    junk_type: String,
+}
+
+#[tauri::command]
+async fn scan_uwp_junk() -> Result<Vec<UwpJunkItem>, String> {
+    info!("[UwpJunk] Scanning for UWP/MS Store junk");
+
+    let local_appdata = std::env::var("LOCALAPPDATA").unwrap_or_default();
+    let packages_dir = format!("{}\\Packages", local_appdata);
+
+    let mut items = Vec::new();
+
+    let pkg_path = std::path::Path::new(&packages_dir);
+    if !pkg_path.exists() {
+        return Ok(items);
+    }
+
+    // Scan each package's temp directories
+    if let Ok(entries) = std::fs::read_dir(pkg_path) {
+        for entry in entries.filter_map(|e| e.ok()) {
+            let pkg_name = entry.file_name().to_string_lossy().to_string();
+
+            // Safe subdirectories to clean
+            let junk_subdirs = vec![
+                ("TempState", "Temp State"),
+                ("AC\\Temp", "App Cache"),
+                ("LocalCache\\Local", "Local Cache"),
+            ];
+
+            for (subdir, junk_type) in &junk_subdirs {
+                let junk_path = format!("{}\\{}\\{}", packages_dir, pkg_name, subdir);
+                let jp = std::path::Path::new(&junk_path);
+                if !jp.exists() { continue; }
+
+                let mut total_bytes: u64 = 0;
+                for file_entry in WalkDir::new(jp).max_depth(5).into_iter().filter_map(|e| e.ok()) {
+                    if file_entry.file_type().is_file() {
+                        total_bytes += file_entry.metadata().map(|m| m.len()).unwrap_or(0);
+                    }
+                }
+
+                if total_bytes > 0 {
+                    // Extract friendly app name from package name
+                    let app_name = pkg_name.split('_').next().unwrap_or(&pkg_name).to_string();
+
+                    items.push(UwpJunkItem {
+                        app_name,
+                        package_name: pkg_name.clone(),
+                        path: junk_path,
+                        size_mb: total_bytes as f64 / 1_048_576.0,
+                        junk_type: junk_type.to_string(),
+                    });
+                }
+            }
+        }
+    }
+
+    // Also scan Windows Update cache
+    let wu_path = "C:\\Windows\\SoftwareDistribution\\Download";
+    if std::path::Path::new(wu_path).exists() {
+        let mut wu_bytes: u64 = 0;
+        for entry in WalkDir::new(wu_path).max_depth(3).into_iter().filter_map(|e| e.ok()) {
+            if entry.file_type().is_file() {
+                wu_bytes += entry.metadata().map(|m| m.len()).unwrap_or(0);
+            }
+        }
+        if wu_bytes > 0 {
+            items.push(UwpJunkItem {
+                app_name: "Windows Update".into(),
+                package_name: "SoftwareDistribution".into(),
+                path: wu_path.into(),
+                size_mb: wu_bytes as f64 / 1_048_576.0,
+                junk_type: "Update Cache".into(),
+            });
+        }
+    }
+
+    // Sort by size
+    items.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap_or(std::cmp::Ordering::Equal));
+
+    info!("[UwpJunk] Found {} UWP junk entries", items.len());
+    Ok(items)
+}
+
+#[tauri::command]
+async fn clean_uwp_junk(paths: Vec<String>) -> Result<String, String> {
+    info!("[UwpJunk] Cleaning {} UWP junk paths", paths.len());
+    let mut freed_bytes: u64 = 0;
+    let mut cleaned = 0;
+
+    for junk_path in &paths {
+        let path = std::path::Path::new(junk_path);
+        if !path.exists() { continue; }
+
+        // Security: only clean known safe subdirectories
+        let path_lower = junk_path.to_lowercase();
+        let is_safe = path_lower.contains("\\tempstate")
+            || path_lower.contains("\\ac\\temp")
+            || path_lower.contains("\\localcache\\local")
+            || path_lower.contains("\\softwaredistribution\\download");
+
+        if !is_safe {
+            info!("[UwpJunk] Skipping unsafe path: {}", junk_path);
+            continue;
+        }
+
+        // Delete contents but keep the directory itself
+        if let Ok(entries) = std::fs::read_dir(path) {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let ep = entry.path();
+                let size = if ep.is_file() {
+                    let s = std::fs::metadata(&ep).map(|m| m.len()).unwrap_or(0);
+                    let _ = std::fs::remove_file(&ep);
+                    s
+                } else if ep.is_dir() {
+                    let s = WalkDir::new(&ep).into_iter()
+                        .filter_map(|e| e.ok())
+                        .filter(|e| e.file_type().is_file())
+                        .map(|e| e.metadata().map(|m| m.len()).unwrap_or(0))
+                        .sum::<u64>();
+                    let _ = std::fs::remove_dir_all(&ep);
+                    s
+                } else { 0 };
+                freed_bytes += size;
+            }
+            cleaned += 1;
+        }
+    }
+
+    let freed_mb = freed_bytes as f64 / 1_048_576.0;
+    info!("[UwpJunk] Cleaned {} paths, freed {:.1} MB", cleaned, freed_mb);
+    Ok(format!("Cleaned {} locations. Freed {:.1} MB", cleaned, freed_mb))
+}
+
+// =============================================================================
+// GAP FEATURE: Browser Extension Scanner
+// =============================================================================
+
+#[derive(Serialize)]
+struct BrowserExtension {
+    browser: String,
+    name: String,
+    version: String,
+    description: String,
+    permissions: Vec<String>,
+    risk_level: String,
+    risk_score: u32,
+    extension_id: String,
+    path: String,
+}
+
+fn assess_extension_risk(permissions: &[String]) -> (String, u32) {
+    let mut score = 0u32;
+
+    for perm in permissions {
+        let p = perm.to_lowercase();
+        if p.contains("<all_urls>") || p.contains("*://*/*") { score += 30; }
+        else if p.contains("webrequest") { score += 25; }
+        else if p.contains("cookies") { score += 20; }
+        else if p.contains("tabs") { score += 10; }
+        else if p.contains("history") { score += 15; }
+        else if p.contains("bookmarks") { score += 5; }
+        else if p.contains("downloads") { score += 10; }
+        else if p.contains("storage") { score += 3; }
+        else if p.contains("notifications") { score += 2; }
+        else if p.contains("clipboardread") || p.contains("clipboardwrite") { score += 15; }
+        else if p.contains("nativemessaging") { score += 20; }
+        else if p.contains("management") { score += 15; }
+        else if p.contains("debugger") { score += 30; }
+        else if p.contains("proxy") { score += 25; }
+        else if p.contains("privacy") { score += 10; }
+    }
+
+    let level = if score >= 50 { "High" }
+        else if score >= 20 { "Medium" }
+        else { "Low" };
+
+    (level.into(), score.min(100))
+}
+
+#[tauri::command]
+async fn scan_browser_extensions() -> Vec<BrowserExtension> {
+    info!("[BrowserExt] Scanning browser extensions");
+
+    let user = std::env::var("USERPROFILE").unwrap_or_default();
+    let local = std::env::var("LOCALAPPDATA").unwrap_or_default();
+    let appdata = std::env::var("APPDATA").unwrap_or_default();
+
+    let mut extensions = Vec::new();
+
+    // Chrome & Edge extensions (Chromium-based)
+    let chromium_browsers = vec![
+        ("Chrome", format!("{}\\Google\\Chrome\\User Data\\Default\\Extensions", local)),
+        ("Edge", format!("{}\\Microsoft\\Edge\\User Data\\Default\\Extensions", local)),
+    ];
+
+    for (browser, ext_dir) in &chromium_browsers {
+        let ext_path = std::path::Path::new(ext_dir);
+        if !ext_path.exists() { continue; }
+
+        if let Ok(entries) = std::fs::read_dir(ext_path) {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let ext_id = entry.file_name().to_string_lossy().to_string();
+
+                // Each extension has version subdirectories
+                if let Ok(versions) = std::fs::read_dir(entry.path()) {
+                    for ver_entry in versions.filter_map(|e| e.ok()) {
+                        let manifest_path = ver_entry.path().join("manifest.json");
+                        if !manifest_path.exists() { continue; }
+
+                        if let Ok(content) = std::fs::read_to_string(&manifest_path) {
+                            // Parse manifest.json
+                            if let Ok(manifest) = serde_json::from_str::<serde_json::Value>(&content) {
+                                let name = manifest["name"].as_str().unwrap_or("Unknown").to_string();
+                                let version = manifest["version"].as_str().unwrap_or("?").to_string();
+                                let description = manifest["description"].as_str().unwrap_or("").to_string();
+
+                                // Collect permissions
+                                let mut perms = Vec::new();
+                                if let Some(arr) = manifest["permissions"].as_array() {
+                                    for p in arr {
+                                        if let Some(s) = p.as_str() { perms.push(s.to_string()); }
+                                    }
+                                }
+                                if let Some(arr) = manifest["host_permissions"].as_array() {
+                                    for p in arr {
+                                        if let Some(s) = p.as_str() { perms.push(s.to_string()); }
+                                    }
+                                }
+
+                                // Skip internal/system extensions
+                                if name.starts_with("__MSG_") || name.contains("Chrome") && description.is_empty() {
+                                    continue;
+                                }
+
+                                let (risk_level, risk_score) = assess_extension_risk(&perms);
+
+                                extensions.push(BrowserExtension {
+                                    browser: browser.to_string(),
+                                    name,
+                                    version,
+                                    description: if description.len() > 100 {
+                                        format!("{}...", &description[..100])
+                                    } else { description },
+                                    permissions: perms,
+                                    risk_level,
+                                    risk_score,
+                                    extension_id: ext_id.clone(),
+                                    path: manifest_path.to_string_lossy().to_string(),
+                                });
+                                break; // Only take the latest version
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Firefox extensions
+    let firefox_profiles = format!("{}\\Mozilla\\Firefox\\Profiles", appdata);
+    let fp = std::path::Path::new(&firefox_profiles);
+    if fp.exists() {
+        if let Ok(profiles) = std::fs::read_dir(fp) {
+            for profile in profiles.filter_map(|e| e.ok()) {
+                let ext_file = profile.path().join("extensions.json");
+                if !ext_file.exists() { continue; }
+
+                if let Ok(content) = std::fs::read_to_string(&ext_file) {
+                    if let Ok(data) = serde_json::from_str::<serde_json::Value>(&content) {
+                        if let Some(addons) = data["addons"].as_array() {
+                            for addon in addons {
+                                let name = addon["defaultLocale"]["name"].as_str()
+                                    .or_else(|| addon["name"].as_str())
+                                    .unwrap_or("Unknown").to_string();
+                                let version = addon["version"].as_str().unwrap_or("?").to_string();
+                                let description = addon["defaultLocale"]["description"].as_str()
+                                    .unwrap_or("").to_string();
+                                let ext_id = addon["id"].as_str().unwrap_or("").to_string();
+
+                                // Firefox permissions
+                                let mut perms = Vec::new();
+                                if let Some(arr) = addon["userPermissions"]["permissions"].as_array() {
+                                    for p in arr { if let Some(s) = p.as_str() { perms.push(s.to_string()); } }
+                                }
+
+                                let (risk_level, risk_score) = assess_extension_risk(&perms);
+
+                                extensions.push(BrowserExtension {
+                                    browser: "Firefox".into(),
+                                    name,
+                                    version,
+                                    description: if description.len() > 100 {
+                                        format!("{}...", &description[..100])
+                                    } else { description },
+                                    permissions: perms,
+                                    risk_level,
+                                    risk_score,
+                                    extension_id: ext_id,
+                                    path: ext_file.to_string_lossy().to_string(),
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Sort by risk score descending
+    extensions.sort_by(|a, b| b.risk_score.cmp(&a.risk_score));
+
+    info!("[BrowserExt] Found {} extensions across all browsers", extensions.len());
+    extensions
+}
+
+// =============================================================================
+// GAP FEATURE: Anti-Spyware (wraps Windows Defender MpCmdRun.exe)
+// =============================================================================
+
+#[derive(Serialize)]
+struct DefenderStatus {
+    antivirus_enabled: bool,
+    real_time_protection: bool,
+    definition_date: String,
+    definition_version: String,
+    last_scan_time: String,
+    engine_version: String,
+}
+
+#[tauri::command]
+async fn get_defender_status() -> Result<DefenderStatus, String> {
+    info!("[AntiSpyware] Getting Windows Defender status");
+
+    let ps_cmd = "Get-MpComputerStatus | Select-Object AntivirusEnabled,RealTimeProtectionEnabled,AntivirusSignatureLastUpdated,AntivirusSignatureVersion,FullScanEndTime,AMEngineVersion | ConvertTo-Json";
+    let output = hidden_powershell()
+        .args(&["-Command", ps_cmd])
+        .output()
+        .map_err(|e| format!("Failed to query Defender: {}", e))?;;
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+
+    if let Ok(data) = serde_json::from_str::<serde_json::Value>(&stdout) {
+        Ok(DefenderStatus {
+            antivirus_enabled: data["AntivirusEnabled"].as_bool().unwrap_or(false),
+            real_time_protection: data["RealTimeProtectionEnabled"].as_bool().unwrap_or(false),
+            definition_date: data["AntivirusSignatureLastUpdated"].as_str()
+                .or_else(|| data["AntivirusSignatureLastUpdated"]["DateTime"].as_str())
+                .unwrap_or("Unknown").to_string(),
+            definition_version: data["AntivirusSignatureVersion"].as_str().unwrap_or("Unknown").to_string(),
+            last_scan_time: data["FullScanEndTime"].as_str()
+                .or_else(|| data["FullScanEndTime"]["DateTime"].as_str())
+                .unwrap_or("Never").to_string(),
+            engine_version: data["AMEngineVersion"].as_str().unwrap_or("Unknown").to_string(),
+        })
+    } else {
+        Err("Could not parse Defender status".into())
+    }
+}
+
+#[derive(Serialize)]
+struct ScanResult {
+    status: String,
+    threats_found: u32,
+    details: String,
+}
+
+#[tauri::command]
+async fn run_defender_scan(scan_type: String, target_path: Option<String>) -> Result<ScanResult, String> {
+    info!("[AntiSpyware] Running Defender scan: {}", scan_type);
+
+    // Find MpCmdRun.exe
+    let mp_path = "C:\\Program Files\\Windows Defender\\MpCmdRun.exe";
+    if !std::path::Path::new(mp_path).exists() {
+        return Err("Windows Defender not found".into());
+    }
+
+    let args = match scan_type.as_str() {
+        "quick" => vec!["-Scan", "-ScanType", "1"],
+        "full" => vec!["-Scan", "-ScanType", "2"],
+        "custom" => {
+            if let Some(ref path) = target_path {
+                // Validate path exists
+                let p = std::path::Path::new(path);
+                if !p.exists() {
+                    return Err("Target path does not exist".into());
+                }
+                vec!["-Scan", "-ScanType", "3", "-File", path.as_str()]
+            } else {
+                return Err("Custom scan requires a target path".into());
+            }
+        }
+        _ => return Err("Invalid scan type. Use: quick, full, or custom".into()),
+    };
+
+    let output = std::process::Command::new(mp_path)
+        .args(&args)
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW
+        .output()
+        .map_err(|e| format!("Failed to run scan: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let exit_code = output.status.code().unwrap_or(-1);
+
+    // MpCmdRun exit codes: 0 = clean, 2 = threats found
+    let threats_found = if exit_code == 2 { 1 } else { 0 };
+    let status = if exit_code == 0 { "Clean" } else if exit_code == 2 { "Threats Found" } else { "Error" };
+
+    info!("[AntiSpyware] Scan complete: {} (exit: {})", status, exit_code);
+
+    Ok(ScanResult {
+        status: status.into(),
+        threats_found,
+        details: if stdout.len() > 500 { format!("{}...", &stdout[..500]) } else { stdout },
+    })
+}
+
+#[tauri::command]
+async fn update_defender_definitions() -> Result<String, String> {
+    info!("[AntiSpyware] Updating Defender definitions");
+
+    let mp_path = "C:\\Program Files\\Windows Defender\\MpCmdRun.exe";
+    if !std::path::Path::new(mp_path).exists() {
+        return Err("Windows Defender not found".into());
+    }
+
+    let output = std::process::Command::new(mp_path)
+        .args(&["-SignatureUpdate"])
+        .creation_flags(0x08000000)
+        .output()
+        .map_err(|e| format!("Failed to update definitions: {}", e))?;
+
+    if output.status.success() {
+        Ok("Definitions updated successfully".into())
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+        Err(format!("Update failed: {}", stderr))
+    }
+}
+
+// =============================================================================
+// GAP FEATURE: DNS Protector
+// =============================================================================
+
+#[derive(Serialize)]
+struct DnsConfig {
+    interface_name: String,
+    current_dns: Vec<String>,
+    is_secure: bool,
+}
+
+#[derive(Serialize)]
+struct DnsProvider {
+    name: String,
+    primary: String,
+    secondary: String,
+    category: String,
+    description: String,
+}
+
+fn get_dns_providers() -> Vec<DnsProvider> {
+    vec![
+        DnsProvider { name: "Cloudflare".into(), primary: "1.1.1.1".into(), secondary: "1.0.0.1".into(), category: "Privacy".into(), description: "Fast, privacy-focused DNS".into() },
+        DnsProvider { name: "Cloudflare Family".into(), primary: "1.1.1.3".into(), secondary: "1.0.0.3".into(), category: "Family Safe".into(), description: "Blocks malware + adult content".into() },
+        DnsProvider { name: "Google".into(), primary: "8.8.8.8".into(), secondary: "8.8.4.4".into(), category: "General".into(), description: "Google Public DNS".into() },
+        DnsProvider { name: "Quad9".into(), primary: "9.9.9.9".into(), secondary: "149.112.112.112".into(), category: "Security".into(), description: "Blocks malicious domains".into() },
+        DnsProvider { name: "OpenDNS".into(), primary: "208.67.222.222".into(), secondary: "208.67.220.220".into(), category: "Security".into(), description: "Cisco OpenDNS with threat protection".into() },
+        DnsProvider { name: "OpenDNS Family".into(), primary: "208.67.222.123".into(), secondary: "208.67.220.123".into(), category: "Family Safe".into(), description: "OpenDNS FamilyShield".into() },
+        DnsProvider { name: "AdGuard".into(), primary: "94.140.14.14".into(), secondary: "94.140.15.15".into(), category: "Ad Blocking".into(), description: "Blocks ads and trackers at DNS level".into() },
+        DnsProvider { name: "AdGuard Family".into(), primary: "94.140.14.15".into(), secondary: "94.140.15.16".into(), category: "Family Safe".into(), description: "AdGuard with family protection".into() },
+    ]
+}
+
+#[tauri::command]
+async fn get_dns_config() -> Result<Vec<DnsConfig>, String> {
+    info!("[DnsProtector] Getting DNS configuration");
+
+    let ps_cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | ForEach-Object { $dns = (Get-DnsClientServerAddress -InterfaceIndex $_.ifIndex -AddressFamily IPv4).ServerAddresses; [PSCustomObject]@{ Name=$_.Name; DNS=($dns -join ',') } } | ConvertTo-Json";
+    let output = hidden_powershell()
+        .args(&["-Command", ps_cmd])
+        .output()
+        .map_err(|e| format!("Failed to get DNS config: {}", e))?;;
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+
+    let secure_dns: Vec<&str> = vec![
+        "1.1.1.1", "1.0.0.1", "1.1.1.3", "1.0.0.3",
+        "8.8.8.8", "8.8.4.4",
+        "9.9.9.9", "149.112.112.112",
+        "208.67.222.222", "208.67.220.220", "208.67.222.123", "208.67.220.123",
+        "94.140.14.14", "94.140.15.15", "94.140.14.15", "94.140.15.16",
+    ];
+
+    let mut configs = Vec::new();
+
+    // Handle both single object and array JSON
+    let parse_item = |item: &serde_json::Value| -> Option<DnsConfig> {
+        let name = item["Name"].as_str()?.to_string();
+        let dns_str = item["DNS"].as_str().unwrap_or("");
+        let dns_list: Vec<String> = dns_str.split(',').filter(|s| !s.is_empty()).map(|s| s.trim().to_string()).collect();
+        let is_secure = !dns_list.is_empty() && dns_list.iter().all(|d| secure_dns.contains(&d.as_str()));
+        Some(DnsConfig { interface_name: name, current_dns: dns_list, is_secure })
+    };
+
+    if let Ok(data) = serde_json::from_str::<serde_json::Value>(&stdout) {
+        if let Some(arr) = data.as_array() {
+            for item in arr { if let Some(c) = parse_item(item) { configs.push(c); } }
+        } else {
+            if let Some(c) = parse_item(&data) { configs.push(c); }
+        }
+    }
+
+    info!("[DnsProtector] Found {} active interfaces", configs.len());
+    Ok(configs)
+}
+
+#[tauri::command]
+async fn get_dns_providers_list() -> Vec<DnsProvider> {
+    get_dns_providers()
+}
+
+#[tauri::command]
+async fn set_dns_provider(interface_name: String, primary: String, secondary: String) -> Result<String, String> {
+    info!("[DnsProtector] Setting DNS for {} to {}, {}", interface_name, primary, secondary);
+
+    // Validate the DNS IPs are from our known providers
+    let providers = get_dns_providers();
+    let is_valid = providers.iter().any(|p| p.primary == primary && p.secondary == secondary);
+    if !is_valid {
+        return Err("DNS servers must be from the approved provider list".into());
+    }
+
+    let iface = sanitize_powershell_input(&interface_name);
+    let ps_cmd = format!(
+        "Set-DnsClientServerAddress -InterfaceAlias '{}' -ServerAddresses ('{}','{}')",
+        iface, primary, secondary
+    );
+    let output = hidden_powershell()
+        .args(&["-Command", &ps_cmd])
+        .output()
+        .map_err(|e| format!("Failed to set DNS: {}", e))?;;
+
+    if output.status.success() {
+        info!("[DnsProtector] DNS updated successfully");
+        Ok(format!("DNS set to {} / {}", primary, secondary))
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+        Err(format!("Failed: {}. Try running as Administrator.", stderr))
+    }
+}
+
+#[tauri::command]
+async fn reset_dns_to_auto(interface_name: String) -> Result<String, String> {
+    info!("[DnsProtector] Resetting DNS to automatic for {}", interface_name);
+    let iface = sanitize_powershell_input(&interface_name);
+    let ps_cmd = format!("Set-DnsClientServerAddress -InterfaceAlias '{}' -ResetServerAddresses", iface);
+    let output = hidden_powershell()
+        .args(&["-Command", &ps_cmd])
+        .output()
+        .map_err(|e| format!("Failed to reset DNS: {}", e))?;;
+
+    if output.status.success() {
+        Ok("DNS reset to automatic (DHCP)".into())
+    } else {
+        Err("Failed to reset DNS. Try running as Administrator.".into())
+    }
+}
+
+// =============================================================================
+// GAP FEATURE: Ad Blocker (hosts-file based)
+// =============================================================================
+
+#[derive(Serialize)]
+struct HostsBlockStatus {
+    total_blocked: u32,
+    is_active: bool,
+    backup_exists: bool,
+    categories: Vec<BlockCategory>,
+}
+
+#[derive(Serialize)]
+struct BlockCategory {
+    name: String,
+    count: u32,
+    domains: Vec<String>,
+}
+
+fn get_blocked_domains() -> Vec<(&'static str, &'static str)> {
+    vec![
+        // Ads
+        ("ads.google.com", "Ads"),
+        ("pagead2.googlesyndication.com", "Ads"),
+        ("adservice.google.com", "Ads"),
+        ("ad.doubleclick.net", "Ads"),
+        ("googleads.g.doubleclick.net", "Ads"),
+        ("static.ads-twitter.com", "Ads"),
+        ("ads.yahoo.com", "Ads"),
+        // Trackers
+        ("tracking.google.com", "Trackers"),
+        ("bat.bing.com", "Trackers"),
+        ("pixel.facebook.com", "Trackers"),
+        ("analytics.twitter.com", "Trackers"),
+        ("t.co", "Trackers"),
+        ("connect.facebook.net", "Trackers"),
+        ("pixel.quantserve.com", "Trackers"),
+        ("sb.scorecardresearch.com", "Trackers"),
+        // Telemetry
+        ("telemetry.microsoft.com", "Telemetry"),
+        ("vortex.data.microsoft.com", "Telemetry"),
+        ("settings-win.data.microsoft.com", "Telemetry"),
+        ("watson.telemetry.microsoft.com", "Telemetry"),
+        ("activity.windows.com", "Telemetry"),
+        ("diagnostics.office.com", "Telemetry"),
+        // Malware (known bad)
+        ("malware.wicar.org", "Malware"),
+        ("eicar.org", "Malware"),
+    ]
+}
+
+#[tauri::command]
+async fn get_hosts_block_status() -> Result<HostsBlockStatus, String> {
+    info!("[AdBlocker] Checking hosts file block status");
+
+    let hosts_path = "C:\\Windows\\System32\\drivers\\etc\\hosts";
+    let backup_path = "C:\\Windows\\System32\\drivers\\etc\\hosts.sabi.bak";
+
+    let hosts_content = std::fs::read_to_string(hosts_path)
+        .unwrap_or_default();
+
+    let blocked_domains = get_blocked_domains();
+    let mut categories_map: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+    let mut total = 0u32;
+
+    for (domain, category) in &blocked_domains {
+        let block_line = format!("0.0.0.0 {}", domain);
+        if hosts_content.contains(&block_line) {
+            total += 1;
+            categories_map.entry(category.to_string()).or_default().push(domain.to_string());
+        }
+    }
+
+    let categories: Vec<BlockCategory> = categories_map.into_iter().map(|(name, domains)| {
+        BlockCategory { count: domains.len() as u32, name, domains }
+    }).collect();
+
+    Ok(HostsBlockStatus {
+        total_blocked: total,
+        is_active: total > 0,
+        backup_exists: std::path::Path::new(backup_path).exists(),
+        categories,
+    })
+}
+
+#[tauri::command]
+async fn enable_hosts_blocking() -> Result<String, String> {
+    info!("[AdBlocker] Enabling hosts-file ad blocking");
+
+    let hosts_path = "C:\\Windows\\System32\\drivers\\etc\\hosts";
+    let backup_path = "C:\\Windows\\System32\\drivers\\etc\\hosts.sabi.bak";
+
+    // Create backup
+    let content = std::fs::read_to_string(hosts_path)
+        .map_err(|e| format!("Cannot read hosts: {}", e))?;
+
+    if !std::path::Path::new(backup_path).exists() {
+        std::fs::write(backup_path, &content)
+            .map_err(|e| format!("Cannot create backup: {}", e))?;
+        info!("[AdBlocker] Backup created at {}", backup_path);
+    }
+
+    // Build block entries
+    let blocked = get_blocked_domains();
+    let mut new_content = content.clone();
+
+    if !new_content.contains("# SABI Ad Blocker") {
+        new_content.push_str("\n\n# SABI Ad Blocker - START\n");
+        for (domain, _) in &blocked {
+            let line = format!("0.0.0.0 {}\n", domain);
+            if !new_content.contains(&line) {
+                new_content.push_str(&line);
+            }
+        }
+        new_content.push_str("# SABI Ad Blocker - END\n");
+    }
+
+    std::fs::write(hosts_path, new_content)
+        .map_err(|e| format!("Cannot write hosts: {}. Run SABI as Administrator.", e))?;
+
+    // Flush DNS cache
+    let _ = hidden_powershell().args(&["-Command", "Clear-DnsClientCache"]).output();
+
+    info!("[AdBlocker] Hosts blocking enabled ({} domains)", blocked.len());
+    Ok(format!("Blocked {} domains. DNS cache flushed.", blocked.len()))
+}
+
+#[tauri::command]
+async fn disable_hosts_blocking() -> Result<String, String> {
+    info!("[AdBlocker] Disabling hosts-file ad blocking");
+
+    let hosts_path = "C:\\Windows\\System32\\drivers\\etc\\hosts";
+    let backup_path = "C:\\Windows\\System32\\drivers\\etc\\hosts.sabi.bak";
+
+    if std::path::Path::new(backup_path).exists() {
+        let backup = std::fs::read_to_string(backup_path)
+            .map_err(|e| format!("Cannot read backup: {}", e))?;
+        std::fs::write(hosts_path, backup)
+            .map_err(|e| format!("Cannot restore hosts: {}. Run as Admin.", e))?;
+        info!("[AdBlocker] Restored from backup");
+        let _ = hidden_powershell().args(&["-Command", "Clear-DnsClientCache"]).output();
+        Ok("Hosts restored from backup. DNS cache flushed.".into())
+    } else {
+        // Remove SABI block section manually
+        let content = std::fs::read_to_string(hosts_path)
+            .map_err(|e| format!("Cannot read hosts: {}", e))?;
+
+        let mut cleaned = String::new();
+        let mut in_block = false;
+        for line in content.lines() {
+            if line.contains("# SABI Ad Blocker - START") { in_block = true; continue; }
+            if line.contains("# SABI Ad Blocker - END") { in_block = false; continue; }
+            if !in_block {
+                cleaned.push_str(line);
+                cleaned.push('\n');
+            }
+        }
+
+        std::fs::write(hosts_path, cleaned)
+            .map_err(|e| format!("Cannot write hosts: {}. Run as Admin.", e))?;
+        let _ = hidden_powershell().args(&["-Command", "Clear-DnsClientCache"]).output();
+        Ok("SABI block entries removed. DNS cache flushed.".into())
+    }
+}
+
+// =============================================================================
+// GAP FEATURE: Login Monitor (Windows Security Event Log)
+// =============================================================================
+
+#[derive(Serialize)]
+struct LoginEvent {
+    event_type: String,
+    timestamp: String,
+    username: String,
+    source_ip: String,
+    logon_type: String,
+    status: String,
+}
+
+#[tauri::command]
+async fn get_login_events(max_events: Option<u32>) -> Result<Vec<LoginEvent>, String> {
+    let count = max_events.unwrap_or(50).min(200);
+    info!("[LoginMonitor] Fetching last {} login events", count);
+
+    // Event IDs: 4624=successful logon, 4625=failed logon, 4634=logoff
+    let ps_cmd = format!(
+        "try {{ Get-WinEvent -FilterHashtable @{{LogName='Security';Id=4624,4625}} -MaxEvents {} -ErrorAction Stop | ForEach-Object {{ $xml = [xml]$_.ToXml(); $data = $xml.Event.EventData.Data; $user = ($data | Where-Object {{$_.Name -eq 'TargetUserName'}}).'#text'; $src = ($data | Where-Object {{$_.Name -eq 'IpAddress'}}).'#text'; $lt = ($data | Where-Object {{$_.Name -eq 'LogonType'}}).'#text'; [PSCustomObject]@{{ Id=$_.Id; Time=$_.TimeCreated.ToString('yyyy-MM-dd HH:mm:ss'); User=$user; Source=$src; LogonType=$lt }} }} | ConvertTo-Json }} catch {{ '[]' }}",
+        count
+    );
+
+    let output = hidden_powershell()
+        .args(&["-Command", &ps_cmd])
+        .output()
+        .map_err(|e| format!("Failed to query security log: {}", e))?;
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string().trim().to_string();
+
+    let mut events = Vec::new();
+
+    let logon_type_name = |lt: &str| -> String {
+        match lt {
+            "2" => "Interactive (local)".into(),
+            "3" => "Network".into(),
+            "4" => "Batch".into(),
+            "5" => "Service".into(),
+            "7" => "Unlock".into(),
+            "8" => "NetworkCleartext".into(),
+            "10" => "RemoteDesktop".into(),
+            "11" => "CachedInteractive".into(),
+            _ => format!("Type {}", lt),
+        }
+    };
+
+    let parse_item = |item: &serde_json::Value| -> Option<LoginEvent> {
+        let id = item["Id"].as_i64()?;
+        let event_type = if id == 4624 { "Login Success" } else { "Login Failed" };
+        let user = item["User"].as_str().unwrap_or("Unknown").to_string();
+        let source = item["Source"].as_str().unwrap_or("-").to_string();
+        let lt = item["LogonType"].as_str().unwrap_or("?");
+
+        // Filter out system/service logons for cleaner display
+        if user == "SYSTEM" || user == "NETWORK SERVICE" || user == "LOCAL SERVICE" || user.ends_with('$') {
+            return None;
+        }
+
+        Some(LoginEvent {
+            event_type: event_type.into(),
+            timestamp: item["Time"].as_str().unwrap_or("").into(),
+            username: user,
+            source_ip: if source == "-" || source.is_empty() { "Local".into() } else { source },
+            logon_type: logon_type_name(lt),
+            status: if id == 4624 { "Success" } else { "Failed" }.into(),
+        })
+    };
+
+    if let Ok(data) = serde_json::from_str::<serde_json::Value>(&stdout) {
+        if let Some(arr) = data.as_array() {
+            for item in arr { if let Some(e) = parse_item(item) { events.push(e); } }
+        } else {
+            if let Some(e) = parse_item(&data) { events.push(e); }
+        }
+    }
+
+    info!("[LoginMonitor] Parsed {} login events", events.len());
+    Ok(events)
+}
+
+// =============================================================================
+// GAP FEATURE: File Recovery (Recycle Bin)
+// =============================================================================
+
+#[derive(Serialize)]
+struct RecycleBinItem {
+    name: String,
+    original_path: String,
+    size_bytes: u64,
+    size_display: String,
+    deleted_date: String,
+    item_type: String,
+}
+
+#[tauri::command]
+async fn get_recycle_bin_items() -> Result<Vec<RecycleBinItem>, String> {
+    info!("[FileRecovery] Listing Recycle Bin items");
+
+    let ps_cmd = "$shell = New-Object -ComObject Shell.Application; $rb = $shell.NameSpace(0x0a); $items = @(); foreach($item in $rb.Items()) { $items += [PSCustomObject]@{ Name=$item.Name; Path=$item.Path; Size=$item.Size; Type=$item.Type; ModifyDate=$item.ModifyDate.ToString('yyyy-MM-dd HH:mm:ss') } }; $items | ConvertTo-Json";
+    let output = hidden_powershell()
+        .args(&["-Command", ps_cmd])
+        .output()
+        .map_err(|e| format!("Failed to read Recycle Bin: {}", e))?;
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+
+    let mut items = Vec::new();
+
+    let format_size = |bytes: u64| -> String {
+        if bytes >= 1_073_741_824 { format!("{:.1} GB", bytes as f64 / 1_073_741_824.0) }
+        else if bytes >= 1_048_576 { format!("{:.1} MB", bytes as f64 / 1_048_576.0) }
+        else if bytes >= 1024 { format!("{:.1} KB", bytes as f64 / 1024.0) }
+        else { format!("{} B", bytes) }
+    };
+
+    let parse_item = |item: &serde_json::Value| -> Option<RecycleBinItem> {
+        let name = item["Name"].as_str()?.to_string();
+        let path = item["Path"].as_str().unwrap_or("").to_string();
+        let size = item["Size"].as_u64().unwrap_or(0);
+        let item_type = item["Type"].as_str().unwrap_or("File").to_string();
+        let date = item["ModifyDate"].as_str().unwrap_or("Unknown").to_string();
+        Some(RecycleBinItem {
+            name,
+            original_path: path,
+            size_bytes: size,
+            size_display: format_size(size),
+            deleted_date: date,
+            item_type,
+        })
+    };
+
+    if let Ok(data) = serde_json::from_str::<serde_json::Value>(&stdout) {
+        if let Some(arr) = data.as_array() {
+            for item in arr { if let Some(r) = parse_item(item) { items.push(r); } }
+        } else {
+            if let Some(r) = parse_item(&data) { items.push(r); }
+        }
+    }
+
+    info!("[FileRecovery] Found {} items in Recycle Bin", items.len());
+    Ok(items)
+}
+
+#[tauri::command]
+async fn restore_recycle_bin_item(item_name: String) -> Result<String, String> {
+    info!("[FileRecovery] Restoring: {}", item_name);
+    let safe_name = sanitize_powershell_input(&item_name);
+    let ps_cmd = format!(
+        "$shell = New-Object -ComObject Shell.Application; $rb = $shell.NameSpace(0x0a); $item = $rb.Items() | Where-Object {{ $_.Name -eq '{}' }} | Select-Object -First 1; if($item) {{ $dest = $shell.NameSpace((Split-Path $item.Path -Parent)); $dest.MoveHere($item); 'Restored' }} else {{ 'Not found' }}",
+        safe_name
+    );
+    let output = hidden_powershell()
+        .args(&["-Command", &ps_cmd])
+        .output()
+        .map_err(|e| format!("Failed to restore: {}", e))?;
+    let result = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if result.contains("Restored") {
+        Ok(format!("Restored: {}", item_name))
+    } else {
+        Err(format!("Could not restore '{}': {}", item_name, result))
+    }
+}
+
+#[tauri::command]
+async fn empty_recycle_bin() -> Result<String, String> {
+    info!("[FileRecovery] Emptying Recycle Bin");
+    let ps_cmd = "Clear-RecycleBin -Force -ErrorAction SilentlyContinue; 'Done'";
+    let output = hidden_powershell()
+        .args(&["-Command", ps_cmd])
+        .output()
+        .map_err(|e| format!("Failed to empty: {}", e))?;
+    if output.status.success() {
+        Ok("Recycle Bin emptied".into())
+    } else {
+        Err("Failed to empty Recycle Bin".into())
+    }
+}
+
+// =============================================================================
+// GAP FEATURE: Cloud Cleaner (OneDrive / Dropbox / Google Drive caches)
+// =============================================================================
+
+#[derive(Serialize)]
+struct CloudCacheEntry {
+    service: String,
+    path: String,
+    size_bytes: u64,
+    size_display: String,
+    file_count: u32,
+}
+
+#[tauri::command]
+async fn scan_cloud_caches() -> Result<Vec<CloudCacheEntry>, String> {
+    info!("[CloudCleaner] Scanning cloud service caches");
+    let user = std::env::var("USERPROFILE").unwrap_or_default();
+    let local = std::env::var("LOCALAPPDATA").unwrap_or_default();
+
+    let cache_paths: Vec<(&str, String)> = vec![
+        ("OneDrive", format!("{}\\AppData\\Local\\Microsoft\\OneDrive\\logs", user)),
+        ("OneDrive", format!("{}\\Microsoft\\OneDrive\\logs", local)),
+        ("Dropbox", format!("{}\\Dropbox\\.dropbox.cache", user)),
+        ("Google Drive", format!("{}\\Google\\DriveFS\\Logs", local)),
+        ("Google Drive", format!("{}\\Google\\DriveFS\\cef_cache", local)),
+        ("iCloud", format!("{}\\Apple\\CloudKit\\Logs", local)),
+    ];
+
+    let mut entries = Vec::new();
+    let format_size = |bytes: u64| -> String {
+        if bytes >= 1_073_741_824 { format!("{:.1} GB", bytes as f64 / 1_073_741_824.0) }
+        else if bytes >= 1_048_576 { format!("{:.1} MB", bytes as f64 / 1_048_576.0) }
+        else if bytes >= 1024 { format!("{:.1} KB", bytes as f64 / 1024.0) }
+        else { format!("{} B", bytes) }
+    };
+
+    for (service, path) in &cache_paths {
+        let p = std::path::Path::new(path);
+        if !p.exists() { continue; }
+
+        fn dir_size(path: &std::path::Path) -> (u64, u32) {
+            let mut size = 0u64;
+            let mut count = 0u32;
+            if let Ok(entries) = std::fs::read_dir(path) {
+                for entry in entries.flatten() {
+                    if let Ok(meta) = entry.metadata() {
+                        if meta.is_file() {
+                            size += meta.len();
+                            count += 1;
+                        } else if meta.is_dir() {
+                            let (s, c) = dir_size(&entry.path());
+                            size += s;
+                            count += c;
+                        }
+                    }
+                }
+            }
+            (size, count)
+        }
+
+        let (total_size, file_count) = dir_size(p);
+
+        if total_size > 0 {
+            entries.push(CloudCacheEntry {
+                service: service.to_string(),
+                path: path.clone(),
+                size_bytes: total_size,
+                size_display: format_size(total_size),
+                file_count,
+            });
+        }
+    }
+
+    info!("[CloudCleaner] Found {} cache locations", entries.len());
+    Ok(entries)
+}
+
+#[tauri::command]
+async fn clean_cloud_cache(path: String) -> Result<String, String> {
+    info!("[CloudCleaner] Cleaning cache: {}", path);
+
+    // Safety: only allow cleaning known cache paths
+    let allowed_patterns = ["OneDrive\\logs", "OneDrive\\Logs", ".dropbox.cache", "DriveFS\\Logs", "DriveFS\\cef_cache", "CloudKit\\Logs"];
+    let is_allowed = allowed_patterns.iter().any(|p| path.contains(p));
+    if !is_allowed {
+        return Err("Path is not a recognized cloud cache directory".into());
+    }
+
+    let p = std::path::Path::new(&path);
+    if !p.exists() {
+        return Err("Path does not exist".into());
+    }
+
+    let mut deleted = 0u32;
+    if let Ok(entries) = std::fs::read_dir(p) {
+        for entry in entries.flatten() {
+            if let Ok(meta) = entry.metadata() {
+                if meta.is_file() {
+                    if std::fs::remove_file(entry.path()).is_ok() { deleted += 1; }
+                }
+            }
+        }
+    }
+
+    info!("[CloudCleaner] Deleted {} files from {}", deleted, path);
+    Ok(format!("Cleaned {} files", deleted))
+}
+
+// =============================================================================
+// GAP FEATURE: Multi-User Support (Windows User Profile Scanner)
+// =============================================================================
+
+#[derive(Serialize)]
+struct UserProfile {
+    username: String,
+    profile_path: String,
+    size_display: String,
+    size_bytes: u64,
+    last_use_time: String,
+    is_active: bool,
+    sid: String,
+}
+
+#[tauri::command]
+async fn get_user_profiles() -> Result<Vec<UserProfile>, String> {
+    info!("[MultiUser] Enumerating user profiles");
+
+    let ps_cmd = "Get-CimInstance Win32_UserProfile | Where-Object { $_.Special -eq $false } | Select-Object LocalPath,SID,LastUseTime,Loaded | ConvertTo-Json";
+    let output = hidden_powershell()
+        .args(&["-Command", ps_cmd])
+        .output()
+        .map_err(|e| format!("Failed to enumerate profiles: {}", e))?;
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+
+    let mut profiles = Vec::new();
+
+    let format_size = |bytes: u64| -> String {
+        if bytes >= 1_073_741_824 { format!("{:.1} GB", bytes as f64 / 1_073_741_824.0) }
+        else if bytes >= 1_048_576 { format!("{:.1} MB", bytes as f64 / 1_048_576.0) }
+        else { format!("{:.1} KB", bytes as f64 / 1024.0) }
+    };
+
+    fn quick_dir_size(path: &std::path::Path) -> u64 {
+        let mut total = 0u64;
+        if let Ok(entries) = std::fs::read_dir(path) {
+            for entry in entries.flatten() {
+                if let Ok(meta) = entry.metadata() {
+                    if meta.is_file() { total += meta.len(); }
+                    else if meta.is_dir() {
+                        // Only go 1 level deep for speed
+                        if let Ok(sub) = std::fs::read_dir(entry.path()) {
+                            for sentry in sub.flatten() {
+                                if let Ok(sm) = sentry.metadata() {
+                                    if sm.is_file() { total += sm.len(); }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        total
+    }
+
+    let parse_item = |item: &serde_json::Value| -> Option<UserProfile> {
+        let path = item["LocalPath"].as_str()?.to_string();
+        let sid = item["SID"].as_str().unwrap_or("").to_string();
+        let is_active = item["Loaded"].as_bool().unwrap_or(false);
+        let last_use = item["LastUseTime"].as_str()
+            .or_else(|| item["LastUseTime"]["DateTime"].as_str())
+            .unwrap_or("Unknown").to_string();
+
+        let username = std::path::Path::new(&path)
+            .file_name()
+            .map(|f| f.to_string_lossy().to_string())
+            .unwrap_or_else(|| "Unknown".into());
+
+        let size = quick_dir_size(std::path::Path::new(&path));
+
+        Some(UserProfile {
+            username,
+            profile_path: path,
+            size_display: format_size(size),
+            size_bytes: size,
+            last_use_time: last_use,
+            is_active,
+            sid,
+        })
+    };
+
+    if let Ok(data) = serde_json::from_str::<serde_json::Value>(&stdout) {
+        if let Some(arr) = data.as_array() {
+            for item in arr { if let Some(p) = parse_item(item) { profiles.push(p); } }
+        } else {
+            if let Some(p) = parse_item(&data) { profiles.push(p); }
+        }
+    }
+
+    info!("[MultiUser] Found {} user profiles", profiles.len());
+    Ok(profiles)
+}
+
+// =============================================================================
+// GAP FEATURE: Smart Optimization (System Health Scoring + Recommendations)
+// =============================================================================
+
+#[derive(Serialize)]
+struct OptimizationScore {
+    overall_score: u32,
+    grade: String,
+    categories: Vec<ScoreCategory>,
+    recommendations: Vec<Recommendation>,
+}
+
+#[derive(Serialize)]
+struct ScoreCategory {
+    name: String,
+    score: u32,
+    max_score: u32,
+    status: String,
+}
+
+#[derive(Serialize)]
+struct Recommendation {
+    title: String,
+    description: String,
+    impact: String,
+    category: String,
+    auto_fixable: bool,
+}
+
+#[tauri::command]
+async fn get_optimization_score() -> Result<OptimizationScore, String> {
+    info!("[SmartOptimize] Calculating system optimization score");
+
+    let mut categories = Vec::new();
+    let mut recommendations = Vec::new();
+
+    // 1. Memory usage score (0-20)
+    let sys = sysinfo::System::new_with_specifics(
+        sysinfo::RefreshKind::nothing().with_memory(sysinfo::MemoryRefreshKind::everything())
+    );
+    let mem_used_pct = (sys.used_memory() as f64 / sys.total_memory() as f64 * 100.0) as u32;
+    let mem_score = if mem_used_pct < 60 { 20 } else if mem_used_pct < 75 { 15 } else if mem_used_pct < 90 { 10 } else { 5 };
+    categories.push(ScoreCategory { name: "Memory".into(), score: mem_score, max_score: 20, status: format!("{}% used", mem_used_pct) });
+    if mem_used_pct > 75 {
+        recommendations.push(Recommendation {
+            title: "High Memory Usage".into(),
+            description: format!("Memory is {}% used. Close unnecessary applications or upgrade RAM.", mem_used_pct),
+            impact: "High".into(), category: "Performance".into(), auto_fixable: false,
+        });
+    }
+
+    // 2. Disk space score (0-20)
+    let disks = sysinfo::Disks::new_with_refreshed_list();
+    let mut disk_score = 20u32;
+    for disk in disks.list() {
+        let total = disk.total_space();
+        let avail = disk.available_space();
+        if total > 0 {
+            let used_pct = ((total - avail) as f64 / total as f64 * 100.0) as u32;
+            if used_pct > 90 {
+                disk_score = 5;
+                recommendations.push(Recommendation {
+                    title: format!("Drive {} Nearly Full", disk.mount_point().display()),
+                    description: format!("{}% used — run Junk Cleaner or Large File Finder.", used_pct),
+                    impact: "High".into(), category: "Disk".into(), auto_fixable: true,
+                });
+            } else if used_pct > 75 {
+                disk_score = disk_score.min(12);
+            }
+        }
+    }
+    categories.push(ScoreCategory { name: "Disk Space".into(), score: disk_score, max_score: 20, status: if disk_score >= 15 { "Healthy".into() } else { "Low space".into() } });
+
+    // 3. Startup items score (0-20)
+    let startup_ps = "Get-CimInstance Win32_StartupCommand | Measure-Object | Select-Object -ExpandProperty Count";
+    let startup_out = hidden_powershell()
+        .args(&["-Command", startup_ps])
+        .output()
+        .ok();
+    let startup_count: u32 = startup_out
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().parse().unwrap_or(0))
+        .unwrap_or(0);
+    let startup_score = if startup_count < 5 { 20 } else if startup_count < 10 { 15 } else if startup_count < 20 { 10 } else { 5 };
+    categories.push(ScoreCategory { name: "Startup".into(), score: startup_score, max_score: 20, status: format!("{} items", startup_count) });
+    if startup_count > 10 {
+        recommendations.push(Recommendation {
+            title: "Too Many Startup Items".into(),
+            description: format!("{} startup items slow boot time. Review in Startup Manager.", startup_count),
+            impact: "Medium".into(), category: "Performance".into(), auto_fixable: true,
+        });
+    }
+
+    // 4. Security score (0-20)
+    let defender_ps = "try { (Get-MpComputerStatus).RealTimeProtectionEnabled } catch { 'false' }";
+    let defender_out = hidden_powershell()
+        .args(&["-Command", defender_ps])
+        .output()
+        .ok();
+    let defender_on = defender_out
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_lowercase().contains("true"))
+        .unwrap_or(false);
+    let fw_ps = "try { (Get-NetFirewallProfile -Profile Domain,Public,Private | Where-Object {$_.Enabled -eq $true}).Count } catch { 0 }";
+    let fw_out = hidden_powershell()
+        .args(&["-Command", fw_ps])
+        .output()
+        .ok();
+    let fw_count: u32 = fw_out
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().parse().unwrap_or(0))
+        .unwrap_or(0);
+    let sec_score = (if defender_on { 10 } else { 0 }) + (if fw_count >= 3 { 10 } else if fw_count >= 1 { 5 } else { 0 });
+    categories.push(ScoreCategory { name: "Security".into(), score: sec_score, max_score: 20, status: format!("Defender: {}, Firewall: {}/3", if defender_on { "On" } else { "Off" }, fw_count) });
+    if !defender_on {
+        recommendations.push(Recommendation {
+            title: "Windows Defender Disabled".into(),
+            description: "Real-time protection is off. Enable it in Anti-Spyware settings.".into(),
+            impact: "Critical".into(), category: "Security".into(), auto_fixable: false,
+        });
+    }
+
+    // 5. System updates score (0-20)
+    let upd_ps = "try { $wu = New-Object -ComObject Microsoft.Update.Session; $s = $wu.CreateUpdateSearcher(); $r = $s.Search('IsInstalled=0'); $r.Updates.Count } catch { -1 }";
+    let upd_out = hidden_powershell()
+        .args(&["-Command", upd_ps])
+        .output()
+        .ok();
+    let pending_updates: i32 = upd_out
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().parse().unwrap_or(-1))
+        .unwrap_or(-1);
+    let update_score = if pending_updates == 0 { 20 } else if pending_updates < 5 { 15 } else if pending_updates < 10 { 10 } else { 5 };
+    let update_status = if pending_updates < 0 { "Unable to check".into() } else { format!("{} pending", pending_updates) };
+    categories.push(ScoreCategory { name: "Updates".into(), score: update_score, max_score: 20, status: update_status });
+    if pending_updates > 5 {
+        recommendations.push(Recommendation {
+            title: "Pending Windows Updates".into(),
+            description: format!("{} updates available. Install them for security and stability.", pending_updates),
+            impact: "Medium".into(), category: "Security".into(), auto_fixable: false,
+        });
+    }
+
+    let overall = categories.iter().map(|c| c.score).sum::<u32>();
+    let grade = match overall {
+        90..=100 => "A+",
+        80..=89 => "A",
+        70..=79 => "B",
+        60..=69 => "C",
+        50..=59 => "D",
+        _ => "F",
+    }.to_string();
+
+    info!("[SmartOptimize] Score: {}/100 ({})", overall, grade);
+
+    Ok(OptimizationScore {
+        overall_score: overall,
+        grade,
+        categories,
+        recommendations,
+    })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
@@ -5062,7 +6740,40 @@ pub fn run() {
             open_in_explorer,
             delete_folder,
             export_system_report,
-            save_text_file
+            save_text_file,
+            // Gap v2 features
+            scan_large_files,
+            delete_file,
+            scan_empty_folders,
+            clean_empty_folders,
+            get_process_priorities,
+            set_process_priority,
+            // Gap v2 Tier 2 features
+            get_smart_clean_config,
+            quick_junk_scan,
+            scan_uwp_junk,
+            clean_uwp_junk,
+            scan_browser_extensions,
+            // Gap v2 Tier 3 features
+            get_defender_status,
+            run_defender_scan,
+            update_defender_definitions,
+            get_dns_config,
+            get_dns_providers_list,
+            set_dns_provider,
+            reset_dns_to_auto,
+            get_hosts_block_status,
+            enable_hosts_blocking,
+            disable_hosts_blocking,
+            get_login_events,
+            // Gap v2 Tier 4 features
+            get_recycle_bin_items,
+            restore_recycle_bin_item,
+            empty_recycle_bin,
+            scan_cloud_caches,
+            clean_cloud_cache,
+            get_user_profiles,
+            get_optimization_score
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

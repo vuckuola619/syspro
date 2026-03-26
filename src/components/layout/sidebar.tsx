@@ -39,6 +39,15 @@ import {
   HeartPulse,
   ChevronDown,
   FileDown,
+  FileSearch,
+  FolderMinus,
+  Gauge as CpuGauge,
+  Sparkles,
+  Puzzle,
+  UserCheck,
+  Cloud,
+  Trash,
+  Users,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -50,6 +59,7 @@ const navigation: NavItem[] = [
   // Overview
   { name: "Dashboard", href: "/", icon: LayoutDashboard, category: "Overview" },
   { name: "One-Click Optimize", href: "/one-click", icon: Zap, category: "Overview" },
+  { name: "Smart Optimize", href: "/smart-optimize", icon: Sparkles, category: "Overview" },
   // Cleaning
   { name: "Junk Cleaner", href: "/junk-cleaner", icon: Trash2, category: "Cleaning" },
   { name: "Registry Cleaner", href: "/registry", icon: Database, category: "Cleaning" },
@@ -62,9 +72,16 @@ const navigation: NavItem[] = [
   { name: "Live Monitor", href: "/live-monitor", icon: AreaChart, category: "Performance" },
   { name: "Turbo Boost", href: "/turbo-boost", icon: Zap, category: "Performance" },
   { name: "Benchmarks", href: "/benchmarks", icon: Gauge, category: "Performance" },
+  { name: "CPU Saver", href: "/cpu-saver", icon: CpuGauge, category: "Performance" },
+  { name: "Smart Clean", href: "/smart-clean", icon: Sparkles, category: "Performance" },
   // Privacy & Security
   { name: "Privacy Eraser", href: "/privacy", icon: Shield, category: "Privacy & Security" },
   { name: "Privacy Hardening", href: "/privacy-hardening", icon: Lock, category: "Privacy & Security" },
+  { name: "Browser Extensions", href: "/browser-extensions", icon: Puzzle, category: "Privacy & Security" },
+  { name: "Anti-Spyware", href: "/anti-spyware", icon: ShieldBan, category: "Privacy & Security" },
+  { name: "DNS Protector", href: "/dns-protector", icon: Globe, category: "Privacy & Security" },
+  { name: "Ad Blocker", href: "/ad-blocker", icon: Shield, category: "Privacy & Security" },
+  { name: "Login Monitor", href: "/login-monitor", icon: UserCheck, category: "Privacy & Security" },
   { name: "Pop-up Blocker", href: "/popup-blocker", icon: BellOff, category: "Privacy & Security" },
   { name: "Firewall Manager", href: "/firewall-manager", icon: Flame, category: "Privacy & Security" },
   { name: "File Hider", href: "/file-hider", icon: EyeOff, category: "Privacy & Security" },
@@ -78,12 +95,18 @@ const navigation: NavItem[] = [
   { name: "Service Manager", href: "/service-manager", icon: Server, category: "System Tools" },
   { name: "Edge Manager", href: "/edge-manager", icon: Globe, category: "System Tools" },
   { name: "Update Manager", href: "/update-manager", icon: RefreshCw, category: "System Tools" },
+  { name: "Multi-User", href: "/multi-user", icon: Users, category: "System Tools" },
   // Disk & Files
   { name: "Disk Analyzer", href: "/disk-analyzer", icon: HardDrive, category: "Disk & Files" },
   { name: "Disk Defrag", href: "/disk-defrag", icon: Disc, category: "Disk & Files" },
   { name: "File Shredder", href: "/file-shredder", icon: FileX2, category: "Disk & Files" },
   { name: "File Splitter", href: "/file-splitter", icon: Scissors, category: "Disk & Files" },
   { name: "Disk Health", href: "/disk-health", icon: HeartPulse, category: "Disk & Files" },
+  { name: "Large File Finder", href: "/large-file-finder", icon: FileSearch, category: "Disk & Files" },
+  { name: "Empty Folders", href: "/empty-folder-scanner", icon: FolderMinus, category: "Disk & Files" },
+  { name: "App Junk", href: "/app-junk", icon: Package, category: "Disk & Files" },
+  { name: "File Recovery", href: "/file-recovery", icon: Trash, category: "Disk & Files" },
+  { name: "Cloud Cleaner", href: "/cloud-cleaner", icon: Cloud, category: "Disk & Files" },
   // Network
   { name: "Internet Booster", href: "/internet-booster", icon: Wifi, category: "Network" },
   { name: "Speed Monitor", href: "/speed-monitor", icon: Wifi, category: "Network" },

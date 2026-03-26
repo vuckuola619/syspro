@@ -46,6 +46,20 @@ const SystemSlimmingPage = lazy(() => import("@/pages/system-slimming"))
 const SpeedTestPage = lazy(() => import("@/pages/speed-test"))
 const DiskHealthPage = lazy(() => import("@/pages/disk-health"))
 const ExportReportPage = lazy(() => import("@/pages/export-report"))
+const LargeFileFinderPage = lazy(() => import("@/pages/large-file-finder"))
+const EmptyFolderScannerPage = lazy(() => import("@/pages/empty-folder-scanner"))
+const CpuSaverPage = lazy(() => import("@/pages/cpu-saver"))
+const SmartCleanPage = lazy(() => import("@/pages/smart-clean"))
+const AppJunkPage = lazy(() => import("@/pages/app-junk"))
+const BrowserExtensionsPage = lazy(() => import("@/pages/browser-extensions"))
+const AntiSpywarePage = lazy(() => import("@/pages/anti-spyware"))
+const DnsProtectorPage = lazy(() => import("@/pages/dns-protector"))
+const AdBlockerPage = lazy(() => import("@/pages/ad-blocker"))
+const LoginMonitorPage = lazy(() => import("@/pages/login-monitor"))
+const FileRecoveryPage = lazy(() => import("@/pages/file-recovery"))
+const CloudCleanerPage = lazy(() => import("@/pages/cloud-cleaner"))
+const MultiUserPage = lazy(() => import("@/pages/multi-user"))
+const SmartOptimizePage = lazy(() => import("@/pages/smart-optimize"))
 
 // ─── Loading Skeleton ───
 function PageSkeleton() {
@@ -183,6 +197,20 @@ function App() {
           <Route path="/speed-test" element={<Suspense fallback={<PageSkeleton />}><SpeedTestPage /></Suspense>} />
           <Route path="/disk-health" element={<Suspense fallback={<PageSkeleton />}><DiskHealthPage /></Suspense>} />
           <Route path="/export-report" element={<Suspense fallback={<PageSkeleton />}><ExportReportPage /></Suspense>} />
+          <Route path="/large-file-finder" element={<Suspense fallback={<PageSkeleton />}><LargeFileFinderPage /></Suspense>} />
+          <Route path="/empty-folder-scanner" element={<Suspense fallback={<PageSkeleton />}><EmptyFolderScannerPage /></Suspense>} />
+          <Route path="/cpu-saver" element={<Suspense fallback={<PageSkeleton />}><CpuSaverPage /></Suspense>} />
+          <Route path="/smart-clean" element={<Suspense fallback={<PageSkeleton />}><SmartCleanPage /></Suspense>} />
+          <Route path="/app-junk" element={<Suspense fallback={<PageSkeleton />}><AppJunkPage /></Suspense>} />
+          <Route path="/browser-extensions" element={<Suspense fallback={<PageSkeleton />}><BrowserExtensionsPage /></Suspense>} />
+          <Route path="/anti-spyware" element={<Suspense fallback={<PageSkeleton />}><AntiSpywarePage /></Suspense>} />
+          <Route path="/dns-protector" element={<Suspense fallback={<PageSkeleton />}><DnsProtectorPage /></Suspense>} />
+          <Route path="/ad-blocker" element={<Suspense fallback={<PageSkeleton />}><AdBlockerPage /></Suspense>} />
+          <Route path="/login-monitor" element={<Suspense fallback={<PageSkeleton />}><LoginMonitorPage /></Suspense>} />
+          <Route path="/file-recovery" element={<Suspense fallback={<PageSkeleton />}><FileRecoveryPage /></Suspense>} />
+          <Route path="/cloud-cleaner" element={<Suspense fallback={<PageSkeleton />}><CloudCleanerPage /></Suspense>} />
+          <Route path="/multi-user" element={<Suspense fallback={<PageSkeleton />}><MultiUserPage /></Suspense>} />
+          <Route path="/smart-optimize" element={<Suspense fallback={<PageSkeleton />}><SmartOptimizePage /></Suspense>} />
           <Route path="/settings" element={<Suspense fallback={<PageSkeleton />}><SettingsPage /></Suspense>} />
         </Route>
       </Routes>

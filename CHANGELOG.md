@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] — 2026-03-26
+
+### ✨ New Features (Tier 4 — Stretch)
+
+| Feature | Description |
+|:---|:---|
+| **File Recovery** | Recycle Bin browser — list, restore individual files, or empty all via COM automation (`get_recycle_bin_items`, `restore_recycle_bin_item`, `empty_recycle_bin`) |
+| **Cloud Cleaner** | OneDrive, Dropbox, Google Drive, iCloud cache scanner and cleaner with whitelisted paths (`scan_cloud_caches`, `clean_cloud_cache`) |
+| **Multi-User Support** | Windows user profile scanner — disk usage, last login, account type (`get_user_profiles`) |
+| **Smart Optimization** | AI-powered health score (0-100) across memory, disk, startup, security, and updates with actionable recommendations (`get_optimization_score`) |
+
+### 📖 Documentation
+
+| Document | Description |
+|:---|:---|
+| `docs/USER_GUIDE.md` | Comprehensive user guide for all 46 features |
+| `docs/PRODUCT_DOCS.md` | Technical architecture, security model, 30+ command reference |
+| `README.md` | Updated with full 46-feature set and documentation links |
+
+### 🌐 Landing Page
+
+- Professional landing page at `website/` for sabi.mybati.com
+- Light mode design with Inter typography and Lucide SVG icons
+- Real application screenshots (5 pages)
+- All 46 features with category filter
+- 28-row competitor gap analysis table (vs CCleaner, IObit, Glary, Wise Care)
+- Direct download links to GitHub release assets
+
+### 🏗 Backend Commands Added (7)
+
+| Command | Description |
+|:---|:---|
+| `get_recycle_bin_items` | List Recycle Bin contents via PowerShell COM |
+| `restore_recycle_bin_item` | Restore a specific file from Recycle Bin |
+| `empty_recycle_bin` | Empty Recycle Bin via Shell.Application COM |
+| `scan_cloud_caches` | Scan cloud service cache directories |
+| `clean_cloud_cache` | Clean whitelisted cloud cache paths |
+| `get_user_profiles` | List Windows user profiles with disk usage |
+| `get_optimization_score` | Calculate system health score (0-100) |
+
+### 📦 Release Assets
+
+| File | Description |
+|:---|:---|
+| `SABI_1.2.0_x64-setup.exe` | NSIS installer (recommended) |
+| `SABI_1.2.0_x64_en-US.msi` | MSI installer for enterprise/GPO |
+
+---
+
 ## [1.1.1] — 2026-03-25
 
 ### ✨ New Features

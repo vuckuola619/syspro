@@ -14,7 +14,7 @@
 
 <p align="center">
   A lightweight, high-performance <strong>PC Optimizer & System Toolkit</strong> for Windows.<br/>
-  Built with Rust and React to deliver native speed, modern UI, and 40+ system tools<br/>
+  Built with Rust and React to deliver native speed, modern UI, and 46+ system tools<br/>
   in a single ~3 MB application — no Electron, no bloat, no telemetry.
 </p>
 
@@ -25,7 +25,9 @@
   &nbsp;·&nbsp;
   <a href="#-tech-stack"><strong>Tech Stack</strong></a>
   &nbsp;·&nbsp;
-  <a href="#-changelog"><strong>Changelog</strong></a>
+  <a href="docs/USER_GUIDE.md"><strong>User Guide</strong></a>
+  &nbsp;·&nbsp;
+  <a href="docs/PRODUCT_DOCS.md"><strong>Product Docs</strong></a>
   &nbsp;·&nbsp;
   <a href="#-building-from-source"><strong>Build</strong></a>
 </p>
@@ -41,8 +43,9 @@
 | **🎨 Modern UI** | Light/dark mode, glassmorphism, smooth animations via shadcn/ui |
 | **🔒 Privacy-first** | Zero telemetry, zero cloud, zero tracking — everything runs locally |
 | **🛡 Secure** | AES-256-GCM encryption, CSPRNG password generation, sanitized system calls |
-| **🛠 All-in-one** | 41 tools across 6 categories that replace multiple utility apps |
+| **🛠 All-in-one** | 46 tools across 8 categories that replace multiple utility apps |
 | **📊 ISO 27001 Ready** | Built-in audit report generator for compliance documentation |
+| **🤖 Smart Scoring** | AI-powered system health scoring with actionable recommendations |
 
 ---
 
@@ -62,35 +65,49 @@
 <table>
 <tr><td>
 
-### 🧹 Cleaning & Optimization
-- **Junk Cleaner** — Temp files, browser cache, system logs, Windows Update cache
-- **Registry Cleaner** — Orphaned COM/InProcServer entries, broken file associations, empty keys (auto-backup)
-- **Registry Defrag** — Hive-level fragmentation analysis with real compaction metrics
-- **Duplicate Finder** — SHA-256 hash-based duplicate detection with partial hashing for large files (memory-optimized)
-- **System Slimming** — Remove Windows bloat components
+### 📊 Overview
+- **Dashboard** — System health overview with key metrics
+- **One-Click Optimize** — Run all cleaners + optimizers in a single click
+- **Smart Optimize** — AI-powered system health scoring (0–100) with grade and actionable recommendations
 
 </td><td>
 
-### ⚡ Performance
-- **Startup Manager** — Control boot programs, boot time analysis, context menu manager
-- **Performance Monitor** — Real-time CPU, RAM with detailed optimization action log
-- **RAM Optimizer** — `EmptyWorkingSet` + standby cache clearing with step-by-step result reporting
-- **Live Monitor** — Continuous dashboard with history graphs
-- **Turbo Boost** — One-click mode (services + process optimization) with full restore
-- **Benchmarks** — CPU, disk, and memory benchmark suite
+### 🧹 Cleaning
+- **Junk Cleaner** — Temp files, browser cache, system logs, Windows Update cache
+- **Registry Cleaner** — Orphaned COM/InProcServer entries, broken file associations, empty keys (auto-backup)
+- **Registry Defrag** — Hive-level fragmentation analysis with real compaction metrics
+- **Duplicate Finder** — SHA-256 hash-based duplicate detection with partial hashing for large files
+- **System Slimming** — Remove Windows bloat components
 
 </td></tr>
 <tr><td>
 
+### ⚡ Performance
+- **Startup Manager** — Control boot programs, boot time analysis, context menu manager
+- **Performance Monitor** — Real-time CPU, RAM with optimization action log
+- **Live Monitor** — Continuous dashboard with history graphs
+- **Turbo Boost** — One-click mode (services + process optimization) with full restore
+- **Benchmarks** — CPU, disk, and memory benchmark suite
+- **CPU Saver** — Detect and manage CPU-hungry background processes
+- **Smart Clean** — Intelligent cleaning with category-based junk analysis
+
+</td><td>
+
 ### 🔒 Privacy & Security
 - **Privacy Eraser** — Chrome + Edge + Firefox data, tracking cookies, telemetry traces
 - **Privacy Hardening** — Windows telemetry & privacy toggles
+- **Browser Extensions** — Scan and manage browser extensions across Edge/Chrome/Firefox
+- **Anti-Spyware** — Windows Defender integration (status, quick/full scan, definition update)
+- **DNS Protector** — 8 secure DNS providers (Cloudflare, Quad9, AdGuard, etc.)
+- **Ad Blocker** — System-level hosts-file blocking (ads, trackers, telemetry, malware)
+- **Login Monitor** — Windows Security Event Log (success/failed logins, logon type)
 - **Pop-up Blocker** — Suppress intrusive Windows notifications
 - **Firewall Manager** — View, toggle, create firewall rules
 - **File Hider** — AES-256-GCM authenticated encryption with password-based file locking
-- **Password Generator** — Cryptographically secure passwords via OS-level CSPRNG (`OsRng`)
+- **Password Generator** — Cryptographically secure passwords via OS-level CSPRNG
 
-</td><td>
+</td></tr>
+<tr><td>
 
 ### 🛠 System Tools
 - **Software Updater** — Real update detection via `winget upgrade` with silent install
@@ -101,18 +118,24 @@
 - **Service Manager** — Start/stop/disable Windows services
 - **Edge Manager** — Microsoft Edge policy control
 - **Update Manager** — Windows Update pause/history with KB descriptions
+- **Multi-User** — Windows user profile scanner with disk usage and last login
 
-</td></tr>
-<tr><td>
+</td><td>
 
 ### 💾 Disk & Files
 - **Disk Analyzer** — Visual disk usage (WinDirStat-style) with open/delete actions
 - **Disk Defrag** — Analyze and defragment drives
-- **Disk Health** — S.M.A.R.T. diagnostics (PowerOnHours, Temperature, Wear) with WMI fallback
 - **File Shredder** — Secure multi-pass file deletion (DoD 5220.22-M)
 - **File Splitter** — Split/join large files
+- **Disk Health** — S.M.A.R.T. diagnostics (PowerOnHours, Temperature, Wear)
+- **Large File Finder** — Recursive scan with size/date/path display
+- **Empty Folders** — Detect and clean empty directory trees
+- **App Junk** — Application-specific leftover scanner
+- **File Recovery** — Recycle Bin browser with individual restore and bulk empty
+- **Cloud Cleaner** — OneDrive, Dropbox, Google Drive, iCloud cache cleaner
 
-</td><td>
+</td></tr>
+<tr><td>
 
 ### 🌐 Network
 - **Internet Booster** — DNS optimization with live active DNS indicator
@@ -121,19 +144,26 @@
 - **Hosts Editor** — Add, edit, and remove entries; block telemetry domains
 - **Speed Test** — Ping, download, and upload testing
 
-</td></tr>
-<tr><td colspan="2">
+</td><td>
 
 ### 🔧 Utilities
 - **System Info** — Detailed hardware & software inventory (OS, CPU, GPU, RAM, BIOS, NIC)
-- **Export Report** — ISO 27001 compliance audit report generator (OS, BitLocker, Admins, Firewall, Antivirus, Network) with TXT download
+- **Export Report** — ISO 27001 compliance audit report generator
 - **Scheduled Clean** — Automated cleanup at set intervals
 - **Restore Points** — Create & manage system restore points
-- **One-Click Optimize** — Run all cleaners + optimizers in a single click
-- **Settings** — Theme selection, auto-start, notification preferences
 
 </td></tr>
 </table>
+
+---
+
+## 📖 Documentation
+
+| Document | Description |
+|:---|:---|
+| [**User Guide**](docs/USER_GUIDE.md) | Step-by-step usage instructions for every feature |
+| [**Product Documentation**](docs/PRODUCT_DOCS.md) | Technical architecture, API reference, and security model |
+| [**Changelog**](CHANGELOG.md) | Full version history |
 
 ---
 
@@ -212,37 +242,25 @@ AG-SysPro/
 │   ├── components/
 │   │   ├── layout/               # Sidebar, TitleBar, AppLayout
 │   │   └── ui/                   # shadcn/ui primitives
-│   ├── pages/                    # 41 feature pages
+│   ├── pages/                    # 46 feature pages
 │   ├── lib/                      # Utilities
 │   └── App.tsx                   # Router + lazy-loaded pages
 ├── src-tauri/
 │   ├── src/
-│   │   └── lib.rs                # 4700+ line Rust backend (all commands)
+│   │   └── lib.rs                # 6700+ line Rust backend (all commands)
 │   ├── capabilities/
 │   │   └── default.json          # Tauri v2 permission grants
 │   ├── icons/                    # App icons
 │   └── tauri.conf.json           # Tauri configuration
+├── docs/
+│   ├── USER_GUIDE.md             # End-user documentation
+│   └── PRODUCT_DOCS.md           # Technical documentation
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
 ├── CHANGELOG.md
 └── README.md
 ```
-
----
-
-## 📋 Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for the full version history.
-
-### Latest: v1.1.1 (2026-03-25)
-
-- **ISO 27001 Audit Report** — Dedicated export page generating system security report
-- **RAM Optimizer Action Log** — Step-by-step report of optimization actions
-- **Disk Health S.M.A.R.T. Fixes** — Correct display of `0` vs `N/A` for healthy drives
-- **Duplicate Finder Memory Fix** — 50K file cap + partial hashing prevents memory bloat
-- **Host Editor Edit Function** — Inline editing of existing host file entries
-- **Window Control Fixes** — Drag, minimize, maximize, close all fully functional
 
 ---
 
@@ -254,6 +272,9 @@ SABI takes security seriously:
 - **AES-256-GCM** — military-grade authenticated encryption for File Hider
 - **CSPRNG** — OS-level cryptographic randomness for password generation
 - **Input sanitization** — all PowerShell commands are sanitized against injection
+- **Path whitelisting** — cloud cache cleaner only operates on approved directories
+- **DNS whitelist** — only pre-approved secure DNS providers can be set
+- **Hosts backup** — automatic backup before any hosts-file modification
 - **Tauri v2 Capabilities** — explicit permission grants for system access (least privilege)
 
 > **Note:** Some features (disk health, registry cleaning, service management) require **administrator privileges** for full functionality.
