@@ -4,6 +4,7 @@ import { lazy, Suspense, useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { AIProvider } from "@/context/ai-context"
+import { FloatingAIChat } from "@/components/floating-ai-chat"
 
 // ─── Lazy-loaded pages (code-split for faster startup) ───
 const DashboardPage = lazy(() => import("@/pages/dashboard"))
@@ -217,6 +218,7 @@ function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    <FloatingAIChat />
     </AIProvider>
   )
 }
