@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { FileText, RefreshCw, Plus, ShieldBan, Trash2 } from "lucide-react"
+import { FileText, RefreshCw, Plus, ShieldBan, Trash2, PenLine } from "lucide-react"
 import { useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { toast } from "sonner"
@@ -121,7 +121,7 @@ export default function HostsEditorPage() {
                       onClick={(ev) => { ev.stopPropagation(); startEdit(e.ip, e.hostname) }}
                       title="Edit entry"
                     >
-                      <RefreshCw className="h-3 w-3" />
+                      <PenLine className="h-3 w-3" />
                     </Button>
                     <Button
                       variant="ghost"

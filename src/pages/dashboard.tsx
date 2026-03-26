@@ -136,6 +136,8 @@ export default function DashboardPage() {
   useEffect(() => {
     loadSystemInfo()
     loadExtendedStats()
+    runHealthCheck()
+    runSmartAnalyze()
   }, [])
 
   async function loadSystemInfo() {
@@ -212,20 +214,22 @@ export default function DashboardPage() {
       {/* Health Score + Quick Scan */}
       <Card>
         <CardContent className="flex items-center gap-8 p-6">
-          <ScoreRing score={hasScanned ? health.overall : 0} />
+          <ScoreRing score={optScore ? optScore.overall_score : (hasScanned ? health.overall : 0)} />
           <div className="flex-1 space-y-3">
             <div>
               <h2 className="text-lg font-semibold">
-                {hasScanned
-                  ? health.overall >= 80 ? "Your system is in great shape"
-                    : health.overall >= 50 ? "Your system needs some attention"
+                {optScore
+                  ? optScore.grade === "A" || optScore.grade === "B" ? "Your system is in great shape"
+                    : optScore.grade === "C" ? "Your system needs some attention"
                     : "Your system needs immediate care"
-                  : "Run a health check to get started"}
+                  : isScanning || isAnalyzing ? "Analyzing your system..."
+                  : "Analyzing system health..."}
               </h2>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {hasScanned
-                  ? "We found some areas that can be optimized for better performance."
-                  : "Scan your system to identify junk files, startup issues, and privacy traces."}
+                {optScore
+                  ? `Score: ${optScore.overall_score}/100 — Grade ${optScore.grade}`
+                  : isScanning || isAnalyzing ? "Running health check and optimization analysis..."
+                  : "Loading..."}
               </p>
             </div>
 
