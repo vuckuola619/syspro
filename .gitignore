@@ -31,3 +31,6 @@ src-tauri/target/
 
 # Archives
 *.zip
+
+# Landing page (separate repo: landing-sabi)
+website/
