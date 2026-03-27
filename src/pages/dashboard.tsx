@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react"
 import {
   Card,
   CardContent,
@@ -59,20 +58,13 @@ function ScoreRing({ score }: { score: number }) {
 
 export default function DashboardPage() {
   const {
-    isAnalyzing, analysisComplete, analysisPercent, analysisLog, currentStep,
+    isAnalyzing, isOptimizing, analysisComplete, analysisPercent, analysisLog, currentStep,
     overview, health, junkResult, privacyResult, startupItems, networkSpeeds,
-    registryIssues, optScore, featureSnap,
-    analyzeSystem,
+    registryIssuesList, optScore, featureSnap,
+    analyzeSystem, optimizeSystem
   } = useDashboard()
 
-  const hasTriggered = useRef(false)
-  useEffect(() => {
-    // Auto-run only if never analyzed before
-    if (!hasTriggered.current && !analysisComplete && !isAnalyzing) {
-      hasTriggered.current = true
-      analyzeSystem()
-    }
-  }, [analysisComplete, isAnalyzing, analyzeSystem])
+  const registryIssues = registryIssuesList.length
 
   // Computed values
   const ramPercent = overview ? overview.ram_usage_percent : 0
@@ -150,22 +142,31 @@ export default function DashboardPage() {
                   <QuickStat icon={<Database className="h-4 w-4" />} label="Registry" value={registryIssues > 0 ? `${registryIssues} issues` : "Clean"} status={registryIssues > 20 ? "warning" : "good"} href="/registry" />
                 </div>
 
-                <Button onClick={analyzeSystem} disabled={isAnalyzing} variant="outline" className="gap-2">
-                  <RefreshCw className="h-4 w-4" /> Re-analyze
-                </Button>
+                <div className="flex gap-3">
+                  {optScore?.grade !== "A" && (
+                    <Button onClick={optimizeSystem} disabled={isAnalyzing || isOptimizing} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white border-none shadow-md">
+                      {isOptimizing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                      {isOptimizing ? "Optimizing System..." : "Optimize System"}
+                    </Button>
+                  )}
+                  <Button onClick={analyzeSystem} disabled={isAnalyzing || isOptimizing} variant="outline" className="gap-2">
+                    <RefreshCw className={`h-4 w-4 ${isAnalyzing && !isOptimizing ? "animate-spin" : ""}`} /> 
+                    {isAnalyzing && !isOptimizing ? "Analyzing..." : "Re-analyze"}
+                  </Button>
+                </div>
               </>
             ) : (
               <>
                 <div>
                   <h2 className="text-lg font-semibold">
-                    {isAnalyzing ? "Analyzing System..." : "System Analysis"}
+                    {isOptimizing ? "Optimizing System..." : isAnalyzing ? "Analyzing System..." : "System Analysis"}
                   </h2>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    {isAnalyzing ? currentStep : "Run a full system scan to see your health score and recommendations"}
+                    {isOptimizing ? "Applying recommended fixes..." : isAnalyzing ? currentStep : "Run a full system scan to see your health score and recommendations"}
                   </p>
                 </div>
 
-                {isAnalyzing ? (
+                {isAnalyzing || isOptimizing ? (
                   <>
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs text-muted-foreground">

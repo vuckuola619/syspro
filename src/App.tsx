@@ -27,7 +27,6 @@ const ScheduledCleanPage = lazy(() => import("@/pages/scheduled-clean"))
 const DiskDefragPage = lazy(() => import("@/pages/disk-defrag"))
 const InternetBoosterPage = lazy(() => import("@/pages/internet-booster"))
 const FileSplitterPage = lazy(() => import("@/pages/file-splitter"))
-const OneClickPage = lazy(() => import("@/pages/one-click"))
 const WindowsDebloaterPage = lazy(() => import("@/pages/windows-debloater"))
 const PrivacyHardeningPage = lazy(() => import("@/pages/privacy-hardening"))
 const RestorePointsPage = lazy(() => import("@/pages/restore-points"))
@@ -180,7 +179,6 @@ function App() {
           <Route path="/disk-defrag" element={<Suspense fallback={<PageSkeleton />}><DiskDefragPage /></Suspense>} />
           <Route path="/internet-booster" element={<Suspense fallback={<PageSkeleton />}><InternetBoosterPage /></Suspense>} />
           <Route path="/file-splitter" element={<Suspense fallback={<PageSkeleton />}><FileSplitterPage /></Suspense>} />
-          <Route path="/one-click" element={<Suspense fallback={<PageSkeleton />}><OneClickPage /></Suspense>} />
           <Route path="/debloater" element={<Suspense fallback={<PageSkeleton />}><WindowsDebloaterPage /></Suspense>} />
           <Route path="/privacy-hardening" element={<Suspense fallback={<PageSkeleton />}><PrivacyHardeningPage /></Suspense>} />
           <Route path="/restore-points" element={<Suspense fallback={<PageSkeleton />}><RestorePointsPage /></Suspense>} />

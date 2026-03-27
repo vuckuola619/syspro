@@ -74,6 +74,7 @@ export const ANALYSIS_STEPS: AnalysisStep[] = [
 interface DashboardContextType {
   // Analysis progress
   isAnalyzing: boolean
+  isOptimizing: boolean
   analysisComplete: boolean
   analysisPercent: number
   analysisLog: string[]
@@ -86,12 +87,13 @@ interface DashboardContextType {
   privacyResult: PrivacyScanResult | null
   startupItems: StartupItem[]
   networkSpeeds: NetworkSpeed[]
-  registryIssues: number
+  registryIssuesList: { id: string }[]
   optScore: OptimizationScore | null
   featureSnap: FeatureSnapshot
 
   // Actions
   analyzeSystem: () => Promise<void>
+  optimizeSystem: () => Promise<void>
 }
 
 const DashboardContext = createContext<DashboardContextType | null>(null)
@@ -106,6 +108,7 @@ export function useDashboard() {
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isOptimizing, setIsOptimizing] = useState(false)
   const [analysisComplete, setAnalysisComplete] = useState(false)
   const [analysisPercent, setAnalysisPercent] = useState(0)
   const [analysisLog, setAnalysisLog] = useState<string[]>([])
@@ -117,7 +120,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [privacyResult, setPrivacyResult] = useState<PrivacyScanResult | null>(null)
   const [startupItems, setStartupItems] = useState<StartupItem[]>([])
   const [networkSpeeds, setNetworkSpeeds] = useState<NetworkSpeed[]>([])
-  const [registryIssues, setRegistryIssues] = useState<number>(0)
+  const [registryIssuesList, setRegistryIssuesList] = useState<{ id: string }[]>([])
   const [optScore, setOptScore] = useState<OptimizationScore | null>(null)
   const [featureSnap, setFeatureSnap] = useState<FeatureSnapshot>({ defender: null, firewallCount: 0, diskHealth: [], softwareUpdates: 0 })
 
@@ -213,10 +216,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       // 9: Registry
       logStep(ANALYSIS_STEPS[8])
       try {
-        const reg = await invoke<{ issues: { id: string }[] }[]>("scan_registry_issues")
-        const count = Array.isArray(reg) ? reg.length : 0
-        setRegistryIssues(count)
-        setAnalysisLog(prev => [...prev, `  ✓ Registry: ${count > 0 ? `${count} issues` : "Clean"}`])
+        const reg = await invoke<{ id: string }[]>("scan_registry_issues")
+        const list = Array.isArray(reg) ? reg : []
+        setRegistryIssuesList(list)
+        setAnalysisLog(prev => [...prev, `  ✓ Registry: ${list.length > 0 ? `${list.length} issues` : "Clean"}`])
       } catch (e) { setAnalysisLog(prev => [...prev, `  ⚠ Registry: ${e}`]) }
 
       // 10: Score
@@ -244,12 +247,55 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const optimizeSystem = useCallback(async () => {
+    if (running.current) return
+    running.current = true
+    setIsOptimizing(true)
+
+    try {
+      // 1. Clean Junk
+      if (junkResult?.categories && junkResult.categories.length > 0) {
+        setAnalysisLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Cleaning junk files...`])
+        await invoke("clean_junk_files", { categoryIds: junkResult.categories.map(c => c.id) }).catch(() => {})
+      }
+      
+      // 2. Clean Privacy
+      if (privacyResult?.categories && privacyResult.categories.length > 0) {
+        setAnalysisLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Erasing privacy traces...`])
+        await invoke("clean_privacy_traces", { categoryIds: privacyResult.categories.map(c => c.id) }).catch(() => {})
+      }
+
+      // 3. Fix Registry
+      if (registryIssuesList.length > 0) {
+        setAnalysisLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Fixing registry issues...`])
+        await invoke("backup_registry").catch(() => {})
+        await invoke("clean_registry_issues", { issueIds: registryIssuesList.map(i => i.id) }).catch(() => {})
+      }
+
+      // 4. Memory (if RAM > 70%)
+      if (overview && overview.ram_usage_percent > 70) {
+        setAnalysisLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Optimizing memory...`])
+        await invoke("optimize_memory").catch(() => {})
+      }
+
+      setAnalysisLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Optimization complete! Re-analyzing system...`])
+      
+      // Allow analyzeSystem to run contextually
+      running.current = false
+      await analyzeSystem()
+    } catch (e) {
+      setAnalysisLog(prev => [...prev, `❌ Optimization failed: ${e}`])
+      setIsOptimizing(false)
+      running.current = false
+    }
+  }, [junkResult, privacyResult, registryIssuesList, overview, analyzeSystem])
+
   return (
     <DashboardContext.Provider value={{
-      isAnalyzing, analysisComplete, analysisPercent, analysisLog, currentStep,
+      isAnalyzing, isOptimizing, analysisComplete, analysisPercent, analysisLog, currentStep,
       overview, health, junkResult, privacyResult, startupItems, networkSpeeds,
-      registryIssues, optScore, featureSnap,
-      analyzeSystem,
+      registryIssuesList, optScore, featureSnap,
+      analyzeSystem, optimizeSystem
     }}>
       {children}
     </DashboardContext.Provider>
