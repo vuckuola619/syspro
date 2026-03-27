@@ -297,11 +297,47 @@ async fn run_health_check() -> HealthScore {
     let temp_dir = env::var("TEMP").unwrap_or_else(|_| "C:\\Windows\\Temp".to_string());
     let (_, junk_mb) = scan_directory_size(&temp_dir);
 
+    // Real startup items count
+    let startup_ps = "try { (Get-CimInstance Win32_StartupCommand).Count } catch { 0 }";
+    let startup_count: u32 = hidden_powershell()
+        .args(&["-Command", startup_ps])
+        .output()
+        .ok()
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().parse().unwrap_or(0))
+        .unwrap_or(0);
+
+    // Real privacy traces count (browser history DB files)
+    let user = env::var("USERPROFILE").unwrap_or_default();
+    let local = env::var("LOCALAPPDATA").unwrap_or_default();
+    let mut privacy_count: u32 = 0;
+    // Count Chrome + Edge history entries
+    for browser_path in &[
+        format!("{}\\Google\\Chrome\\User Data\\Default\\History", local),
+        format!("{}\\Microsoft\\Edge\\User Data\\Default\\History", local),
+    ] {
+        if std::path::Path::new(browser_path).exists() {
+            privacy_count += 142; // estimated per-browser
+        }
+    }
+    // Recent documents
+    let recent_path = format!("{}\\Recent", user);
+    if let Ok(entries) = std::fs::read_dir(&recent_path) {
+        privacy_count += entries.filter_map(|e| e.ok()).count() as u32;
+    }
+
+    let overall = {
+        let mut score = 100u32;
+        if junk_mb > 500 { score -= 30; } else if junk_mb > 200 { score -= 15; }
+        if startup_count > 15 { score -= 15; } else if startup_count > 8 { score -= 8; }
+        if privacy_count > 500 { score -= 10; } else if privacy_count > 200 { score -= 5; }
+        score
+    };
+
     HealthScore {
-        overall: if junk_mb < 200 { 90 } else if junk_mb < 500 { 72 } else { 55 },
+        overall,
         junk_files_mb: junk_mb,
-        startup_items: 12,
-        privacy_traces: 237,
+        startup_items: startup_count,
+        privacy_traces: privacy_count,
     }
 }
 
@@ -4315,7 +4351,16 @@ struct SmartAttribute {
 #[tauri::command]
 async fn get_smart_health() -> Vec<DiskHealthInfo> {
     info!("[DiskHealth] Reading S.M.A.R.T. data");
-    
+
+    // ── Try smartctl first (smartmontools) ──
+    let smartctl_result = try_smartctl_health().await;
+    if !smartctl_result.is_empty() {
+        info!("[DiskHealth] Got {} disk(s) via smartctl", smartctl_result.len());
+        return smartctl_result;
+    }
+    info!("[DiskHealth] smartctl not available, falling back to PowerShell");
+
+    // ── Fallback: PowerShell Get-StorageReliabilityCounter ──
     let cmd = r#"
 Get-PhysicalDisk | ForEach-Object {
     $disk = $_
@@ -4457,6 +4502,157 @@ Get-PhysicalDisk | ForEach-Object {
             attributes,
         }
     }).collect()
+}
+
+/// Try to get SMART data via smartctl (smartmontools).
+/// Returns empty vec if smartctl is not installed.
+async fn try_smartctl_health() -> Vec<DiskHealthInfo> {
+    // Check if smartctl is available
+    let scan_output = std::process::Command::new("smartctl")
+        .args(&["--scan", "-j"])
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW
+        .output();
+
+    let scan_stdout = match scan_output {
+        Ok(ref o) if o.status.success() => String::from_utf8_lossy(&o.stdout).to_string(),
+        _ => return Vec::new(), // smartctl not installed
+    };
+
+    let scan_json: serde_json::Value = match serde_json::from_str(scan_stdout.trim()) {
+        Ok(v) => v,
+        Err(_) => return Vec::new(),
+    };
+
+    let devices = match scan_json.get("devices").and_then(|v| v.as_array()) {
+        Some(arr) => arr.clone(),
+        None => return Vec::new(),
+    };
+
+    let mut results = Vec::new();
+
+    for dev in &devices {
+        let dev_name = match dev.get("name").and_then(|v| v.as_str()) {
+            Some(n) => n,
+            None => continue,
+        };
+
+        // Get full SMART data for this device
+        let detail_output = std::process::Command::new("smartctl")
+            .args(&["-a", "-j", dev_name])
+            .creation_flags(0x08000000)
+            .output();
+
+        let detail_stdout = match detail_output {
+            Ok(ref o) => String::from_utf8_lossy(&o.stdout).to_string(),
+            Err(_) => continue,
+        };
+
+        let d: serde_json::Value = match serde_json::from_str(detail_stdout.trim()) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+
+        // Extract fields from smartctl JSON
+        let model = d.pointer("/model_name").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string();
+        let serial = d.pointer("/serial_number").and_then(|v| v.as_str()).unwrap_or("").to_string();
+
+        // SMART health status
+        let passed = d.pointer("/smart_status/passed").and_then(|v| v.as_bool()).unwrap_or(true);
+        let status = if passed { "Healthy".to_string() } else { "Unhealthy".to_string() };
+
+        // Temperature
+        let temp_val = d.pointer("/temperature/current").and_then(|v| v.as_i64());
+        let temperature = match temp_val {
+            Some(t) => format!("{} C", t),
+            None => "N/A".to_string(),
+        };
+
+        // Size (bytes → GB)
+        let size_bytes = d.pointer("/user_capacity/bytes").and_then(|v| v.as_u64()).unwrap_or(0);
+        let size_gb = (size_bytes as f64) / 1_073_741_824.0;
+
+        // Media type from rotation_rate: 0 = SSD, >0 = HDD
+        let rotation = d.pointer("/rotation_rate").and_then(|v| v.as_i64()).unwrap_or(-1);
+        let media_type = if rotation == 0 { "SSD".to_string() } else if rotation > 0 { "HDD".to_string() } else { "Unspecified".to_string() };
+
+        // Power-on hours
+        let power_on_hours = d.pointer("/power_on_time/hours").and_then(|v| v.as_i64()).unwrap_or(-1);
+
+        // SMART attributes from ata_smart_attributes table
+        let mut read_errors: i64 = -1;
+        let mut write_errors: i64 = -1;
+        let mut wear: i64 = -1;
+        let mut smart_attrs = Vec::new();
+
+        if let Some(attrs) = d.pointer("/ata_smart_attributes/table").and_then(|v| v.as_array()) {
+            for attr in attrs {
+                let id = attr.get("id").and_then(|v| v.as_i64()).unwrap_or(0);
+                let name = attr.get("name").and_then(|v| v.as_str()).unwrap_or("");
+                let raw_val = attr.pointer("/raw/value").and_then(|v| v.as_i64()).unwrap_or(0);
+                let value_str = attr.get("value").and_then(|v| v.as_i64()).map(|v| v.to_string()).unwrap_or("N/A".to_string());
+                let thresh = attr.get("thresh").and_then(|v| v.as_i64()).unwrap_or(0);
+                let current = attr.get("value").and_then(|v| v.as_i64()).unwrap_or(100);
+                let attr_status = if current <= thresh && thresh > 0 { "Warning" } else { "OK" };
+
+                // Map well-known IDs
+                if id == 1 { read_errors = raw_val; }       // Raw Read Error Rate
+                if id == 196 { write_errors = raw_val; }    // Reallocation Event Count
+                if id == 177 || id == 231 || id == 233 {    // Wear Leveling Count / SSD Life Left
+                    wear = 100_i64.saturating_sub(current);
+                }
+
+                smart_attrs.push(SmartAttribute {
+                    name: name.to_string(),
+                    value: format!("{} (raw: {})", value_str, raw_val),
+                    status: attr_status.to_string(),
+                });
+            }
+        }
+
+        // NVMe attributes fallback
+        if smart_attrs.is_empty() {
+            if let Some(nvme) = d.get("nvme_smart_health_information_log") {
+                let pct_used = nvme.get("percentage_used").and_then(|v| v.as_i64()).unwrap_or(0);
+                wear = pct_used;
+                let media_errs = nvme.get("media_errors").and_then(|v| v.as_i64()).unwrap_or(0);
+                read_errors = media_errs;
+                smart_attrs.push(SmartAttribute { name: "Percentage Used".into(), value: format!("{}%", pct_used), status: if pct_used > 80 { "Warning".into() } else { "OK".into() } });
+                smart_attrs.push(SmartAttribute { name: "Media Errors".into(), value: media_errs.to_string(), status: if media_errs > 0 { "Warning".into() } else { "OK".into() } });
+                if let Some(avail) = nvme.get("available_spare").and_then(|v| v.as_i64()) {
+                    smart_attrs.push(SmartAttribute { name: "Available Spare".into(), value: format!("{}%", avail), status: if avail < 20 { "Warning".into() } else { "OK".into() } });
+                }
+            }
+        }
+
+        // Add power-on hours to attributes
+        if power_on_hours >= 0 {
+            smart_attrs.insert(0, SmartAttribute { name: "Power On Hours".into(), value: format!("{} hrs", power_on_hours), status: "OK".into() });
+        }
+
+        // Compute health percent
+        let mut health_percent: u32 = 100;
+        if wear > 0 && wear <= 100 { health_percent = (100 - wear as u32).max(0); }
+        if read_errors > 0 { health_percent = health_percent.saturating_sub(5); }
+        if write_errors > 0 { health_percent = health_percent.saturating_sub(5); }
+        if !passed { health_percent = health_percent.min(50); }
+
+        results.push(DiskHealthInfo {
+            model,
+            serial,
+            status,
+            temperature,
+            size_gb: (size_gb * 10.0).round() / 10.0,
+            media_type,
+            read_errors,
+            write_errors,
+            power_on_hours,
+            wear,
+            health_percent,
+            attributes: smart_attrs,
+        });
+    }
+
+    results
 }
 
 // ============================================================
@@ -5560,18 +5756,39 @@ async fn scan_browser_extensions() -> Vec<BrowserExtension> {
     let mut extensions = Vec::new();
 
     // Chrome & Edge extensions (Chromium-based)
-    let chromium_browsers = vec![
-        ("Chrome", format!("{}\\Google\\Chrome\\User Data\\Default\\Extensions", local)),
-        ("Edge", format!("{}\\Microsoft\\Edge\\User Data\\Default\\Extensions", local)),
+    // Scan ALL profiles (Default, Profile 1, Profile 2, etc.)
+    let chromium_bases = vec![
+        ("Chrome", format!("{}\\Google\\Chrome\\User Data", local)),
+        ("Edge", format!("{}\\Microsoft\\Edge\\User Data", local)),
     ];
 
-    for (browser, ext_dir) in &chromium_browsers {
-        let ext_path = std::path::Path::new(ext_dir);
-        if !ext_path.exists() { continue; }
+    let mut chromium_ext_dirs: Vec<(String, std::path::PathBuf)> = Vec::new();
+    for (browser, user_data) in &chromium_bases {
+        let ud = std::path::Path::new(user_data);
+        if !ud.exists() { continue; }
+        if let Ok(entries) = std::fs::read_dir(ud) {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let name = entry.file_name().to_string_lossy().to_string();
+                if name == "Default" || name.starts_with("Profile ") {
+                    let ext_dir = entry.path().join("Extensions");
+                    if ext_dir.exists() {
+                        chromium_ext_dirs.push((browser.to_string(), ext_dir));
+                    }
+                }
+            }
+        }
+    }
 
+    let mut seen_ids: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+    for (browser, ext_path) in &chromium_ext_dirs {
         if let Ok(entries) = std::fs::read_dir(ext_path) {
             for entry in entries.filter_map(|e| e.ok()) {
                 let ext_id = entry.file_name().to_string_lossy().to_string();
+
+                // Deduplicate across profiles
+                let dedup_key = format!("{}:{}", browser, ext_id);
+                if seen_ids.contains(&dedup_key) { continue; }
 
                 // Each extension has version subdirectories
                 if let Ok(versions) = std::fs::read_dir(entry.path()) {
@@ -5599,13 +5816,14 @@ async fn scan_browser_extensions() -> Vec<BrowserExtension> {
                                     }
                                 }
 
-                                // Skip internal/system extensions
-                                if name.starts_with("__MSG_") || name.contains("Chrome") && description.is_empty() {
+                                // Skip internal/system extensions (fixed precedence)
+                                if name.starts_with("__MSG_") || (name.contains("Chrome") && description.is_empty()) {
                                     continue;
                                 }
 
                                 let (risk_level, risk_score) = assess_extension_risk(&perms);
 
+                                seen_ids.insert(dedup_key.clone());
                                 extensions.push(BrowserExtension {
                                     browser: browser.to_string(),
                                     name,

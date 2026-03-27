@@ -16,7 +16,7 @@ interface AIContextType {
 const DEFAULT_SETTINGS: AISettings = {
   enabled: false,
   apiKey: "",
-  model: "gemini-2.0-flash",
+  model: "gemini-2.5-flash",
   provider: "gemini",
 }
 
@@ -66,13 +66,14 @@ export async function askAI(
   if (!settings.apiKey) throw new Error("API key not configured")
 
   if (settings.provider === "gemini") {
-    const model = settings.model || "gemini-2.0-flash"
+    const model = settings.model || "gemini-2.5-flash"
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${settings.apiKey}`
     const body = {
+      systemInstruction: { parts: [{ text: systemContext }] },
       contents: [
-        { role: "user", parts: [{ text: `${systemContext}\n\nUser question: ${userMessage}` }] },
+        { role: "user", parts: [{ text: userMessage }] },
       ],
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
+      generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
     }
     const res = await fetch(url, {
       method: "POST",
@@ -84,7 +85,18 @@ export async function askAI(
       throw new Error(`Gemini API error: ${res.status} — ${err}`)
     }
     const data = await res.json()
-    return data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response generated."
+    // Gemini 2.5 "thinking" models return multiple parts (thought + text)
+    // Extract the last text part which is the actual response
+    const parts = data?.candidates?.[0]?.content?.parts
+    if (Array.isArray(parts) && parts.length > 0) {
+      // Find the last part with a non-empty "text" field (skip thought parts)
+      for (let i = parts.length - 1; i >= 0; i--) {
+        if (parts[i].text && parts[i].text.trim().length > 0) {
+          return parts[i].text
+        }
+      }
+    }
+    return "No response generated."
   }
 
   // OpenAI

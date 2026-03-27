@@ -309,7 +309,7 @@ export default function SettingsPage() {
                     const prov = e.target.value as "gemini" | "openai"
                     updateAI({
                       provider: prov,
-                      model: prov === "gemini" ? "gemini-2.0-flash" : "gpt-4o-mini"
+                      model: prov === "gemini" ? "gemini-2.5-flash" : "gpt-4o-mini"
                     })
                   }}
                 >
@@ -333,7 +333,7 @@ export default function SettingsPage() {
                 >
                   {aiSettings.provider === "gemini" ? (
                     <>
-                      <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                      <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                       <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
                     </>
                   ) : (

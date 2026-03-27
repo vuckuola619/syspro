@@ -4,6 +4,7 @@ import { lazy, Suspense, useState, useEffect } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { AIProvider } from "@/context/ai-context"
+import { DashboardProvider } from "@/context/dashboard-context"
 import { FloatingAIChat } from "@/components/floating-ai-chat"
 
 // ─── Lazy-loaded pages (code-split for faster startup) ───
@@ -154,6 +155,7 @@ function App() {
 
   return (
     <AIProvider>
+    <DashboardProvider>
     <BrowserRouter>
       {updateInfo && !dismissed && (
         <UpdateBanner info={updateInfo} onDismiss={() => setDismissed(true)} />
@@ -219,6 +221,7 @@ function App() {
       </Routes>
     </BrowserRouter>
     <FloatingAIChat />
+    </DashboardProvider>
     </AIProvider>
   )
 }

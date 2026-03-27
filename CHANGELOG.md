@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Feature | Description |
 |:---|:---|
+| **Dashboard Analysis Flow** | Unified 11-step sequential scan on dashboard load with progress bar, detailed status log using virtualized scroll, and global React context persistence (prevents redundant rescans on navigation) |
+| **S.M.A.R.T. Integration** | `get_smart_health` backend command now prioritizes `smartctl -j` for comprehensive ATA/NVMe stats (temp, power-on hours, wear, error counts) before gracefully falling back to PowerShell WMI counters |
 | **Auto Clean** | File impact breakdown after scan: Temp Files, Browser Cache, System Logs, Recycle Bin, Other — with distribution bars and file counts |
 | **Disk Analyzer** | Subfolder icons, "Delete" button per subfolder, "Open in Explorer" shortcuts |
 | **Turbo Boost** | New tabbed UI: Turbo Mode \| Process Priority with Gaming Mode |
