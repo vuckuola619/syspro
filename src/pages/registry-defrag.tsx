@@ -23,7 +23,7 @@ export default function RegistryDefragPage() {
     setDefragResult("")
     try {
       const result = await invoke<RegistryDefragInfo[]>("analyze_registry_fragmentation")
-      setHives(result)
+      setHives(Array.isArray(result) ? result : [])
     } catch (e) { toast.error(String(e)) }
     finally { setLoading(false) }
   }
@@ -70,7 +70,7 @@ export default function RegistryDefragPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Size</span>
-                    <span className="font-medium">{h.current_size_mb.toFixed(1)} MB</span>
+                    <span className="font-medium">{(h.current_size_mb ?? 0).toFixed(1)} MB</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Fragmentation</span>

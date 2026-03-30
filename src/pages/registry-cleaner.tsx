@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Database, Search, RefreshCw, Trash2, CheckCircle2, AlertTriangle } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
-import { useState } from "react"
+import { useState, useRef } from "react"
+import { useVirtualizer } from "@tanstack/react-virtual"
 import { invoke } from "@tauri-apps/api/core"
 import { toast } from "sonner"
 
@@ -22,6 +23,14 @@ export default function RegistryCleanerPage() {
   const [hasCleaned, setHasCleaned] = useState(false)
   const [scanProgress, setScanProgress] = useState(0)
   const [issues, setIssues] = useState<RegistryIssue[]>([])
+
+  const parentRef = useRef<HTMLDivElement>(null)
+  const rowVirtualizer = useVirtualizer({
+    count: issues.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 90,
+    overscan: 5,
+  })
 
   async function startScan() {
     setIsScanning(true)
@@ -155,30 +164,53 @@ export default function RegistryCleanerPage() {
       </Card>
 
       {hasScanned && !hasCleaned && (
-        <div className="space-y-2">
-          {issues.map((issue) => (
-            <Card
-              key={issue.id}
-              className={`cursor-pointer transition-colors ${issue.checked ? "border-primary/30 bg-primary/[0.02]" : ""}`}
-              onClick={() => toggleIssue(issue.id)}
-            >
-              <CardContent className="flex items-center gap-4 p-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium">{issue.category}</p>
-                    <Badge variant="outline" className={`text-[10px] ${severityColors[issue.severity]}`}>
-                      {issue.severity}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">{issue.description}</p>
-                  <p className="text-xs text-muted-foreground/60 mt-0.5 font-mono">{issue.key}</p>
+        <div ref={parentRef} className="h-[500px] overflow-auto rounded-md border p-2 bg-background space-y-0">
+          <div
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+              width: "100%",
+              position: "relative",
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const issue = issues[virtualRow.index]
+              return (
+                <div
+                  key={virtualRow.key}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                    paddingBottom: "8px",
+                  }}
+                >
+                  <Card
+                    className={`h-full cursor-pointer transition-colors ${issue.checked ? "border-primary/30 bg-primary/[0.02]" : ""}`}
+                    onClick={() => toggleIssue(issue.id)}
+                  >
+                    <CardContent className="flex items-center gap-4 p-4 h-full">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{issue.category}</p>
+                          <Badge variant="outline" className={`text-[10px] ${severityColors[issue.severity]}`}>
+                            {issue.severity}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">{issue.description}</p>
+                        <p className="text-xs text-muted-foreground/60 mt-0.5 font-mono truncate">{issue.key}</p>
+                      </div>
+                      <div className={`flex h-5 w-5 items-center justify-center shrink-0 rounded border-2 transition-colors ${issue.checked ? "border-primary bg-primary" : "border-muted-foreground/30"}`}>
+                        {issue.checked && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-                <div className={`flex h-5 w-5 items-center justify-center rounded border-2 transition-colors ${issue.checked ? "border-primary bg-primary" : "border-muted-foreground/30"}`}>
-                  {issue.checked && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+              )
+            })}
+          </div>
         </div>
       )}
     </div>

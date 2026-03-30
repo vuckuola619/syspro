@@ -34,8 +34,9 @@ export default function EmptyFolderScannerPage() {
       const data = await invoke<EmptyFolderItem[]>("scan_empty_folders", {
         targetDir: selectedPath as string,
       })
-      setFolders(data)
-      toast.success(`Found ${data.length} empty folders`)
+      const safeData = Array.isArray(data) ? data : []
+      setFolders(safeData)
+      toast.success(`Found ${safeData.length} empty folders`)
     } catch (e) {
       toast.error(String(e))
     } finally {

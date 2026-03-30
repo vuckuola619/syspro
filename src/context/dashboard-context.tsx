@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from "react"
+import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from "react"
 import { invoke } from "@tauri-apps/api/core"
 
 // ── Types ──
@@ -51,6 +51,22 @@ export interface FeatureSnapshot {
   softwareUpdates: number
 }
 
+// ── Cached Dashboard (from Rust cache.rs) ──
+
+interface CachedDashboard {
+  overview: SystemOverview | null
+  junk: JunkScanResult | null
+  startup: StartupItem[] | null
+  privacy: PrivacyScanResult | null
+  network: NetworkSpeed[] | null
+  disk_health: DiskHealthInfo[] | null
+  defender: DefenderInfo | null
+  firewall_rules: FirewallRule[] | null
+  software_updates: number | null
+  registry_count: number | null
+  health: HealthScore | null
+}
+
 // ── Analysis step definition ──
 
 export interface AnalysisStep { id: string; label: string; percent: number }
@@ -79,6 +95,7 @@ interface DashboardContextType {
   analysisPercent: number
   analysisLog: string[]
   currentStep: string
+  isCachedLoad: boolean
 
   // Data
   overview: SystemOverview | null
@@ -113,6 +130,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [analysisPercent, setAnalysisPercent] = useState(0)
   const [analysisLog, setAnalysisLog] = useState<string[]>([])
   const [currentStep, setCurrentStep] = useState("")
+  const [isCachedLoad, setIsCachedLoad] = useState(false)
 
   const [overview, setOverview] = useState<SystemOverview | null>(null)
   const [health, setHealth] = useState<HealthScore>({ overall: 0, junk_files_mb: 0, startup_items: 0, privacy_traces: 0 })
@@ -125,6 +143,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [featureSnap, setFeatureSnap] = useState<FeatureSnapshot>({ defender: null, firewallCount: 0, diskHealth: [], softwareUpdates: 0 })
 
   const running = useRef(false)
+  const cacheLoaded = useRef(false)
 
   function logStep(step: AnalysisStep) {
     setCurrentStep(step.label)
@@ -132,6 +151,34 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setAnalysisLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${step.label}`])
   }
 
+  // ── Load cached data on mount for instant paint ──
+  useEffect(() => {
+    if (cacheLoaded.current) return
+    cacheLoaded.current = true
+    ;(async () => {
+      try {
+        const cached = await invoke<CachedDashboard | null>("get_cached_dashboard")
+        if (!cached) return
+        let hasData = false
+        if (cached.overview) { setOverview(cached.overview); hasData = true }
+        if (cached.junk) { setJunkResult(cached.junk); hasData = true }
+        if (cached.startup) { setStartupItems(cached.startup); hasData = true }
+        if (cached.privacy) { setPrivacyResult(cached.privacy); hasData = true }
+        if (cached.network) { setNetworkSpeeds(cached.network); hasData = true }
+        if (cached.disk_health) { setFeatureSnap(prev => ({ ...prev, diskHealth: cached.disk_health! })); hasData = true }
+        if (cached.defender) { setFeatureSnap(prev => ({ ...prev, defender: cached.defender })); hasData = true }
+        if (cached.firewall_rules) { setFeatureSnap(prev => ({ ...prev, firewallCount: cached.firewall_rules!.filter((r: FirewallRule) => r.enabled).length })); hasData = true }
+        if (cached.software_updates != null) { setFeatureSnap(prev => ({ ...prev, softwareUpdates: cached.software_updates! })); hasData = true }
+        if (cached.health) { setHealth(cached.health); hasData = true }
+        if (hasData) {
+          setIsCachedLoad(true)
+          setAnalysisComplete(true)
+        }
+      } catch { /* first run, no cache */ }
+    })()
+  }, [])
+
+  // ── Full analysis using batch_invoke (single IPC roundtrip) ──
   const analyzeSystem = useCallback(async () => {
     if (running.current) return
     running.current = true
@@ -140,105 +187,110 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setAnalysisPercent(0)
     setAnalysisLog([])
     setCurrentStep("")
+    setIsCachedLoad(false)
 
     try {
-      // 1: System info
       logStep(ANALYSIS_STEPS[0])
-      try {
-        const data = await invoke<SystemOverview>("get_system_overview")
+      setAnalysisLog(prev => [...prev, `  ⚡ Using batch pipeline (single roundtrip)`])
+
+      // Single IPC call — all commands run in parallel on Rust side
+      const results = await invoke<Record<string, unknown>>("batch_invoke", {
+        commands: [
+          "get_system_overview", "scan_junk_files", "get_startup_items",
+          "scan_privacy_traces", "get_network_speed", "get_smart_health",
+          "get_defender_status", "get_firewall_rules", "check_software_updates",
+          "scan_registry_issues", "run_health_check", "get_optimization_score"
+        ]
+      })
+
+      // Apply results step by step with progress updates
+      logStep(ANALYSIS_STEPS[0])
+      if (results.get_system_overview) {
+        const data = results.get_system_overview as SystemOverview
         setOverview(data)
-        setAnalysisLog(prev => [...prev, `  ✓ ${data.cpu_name} | ${data.ram_total_gb.toFixed(1)} GB RAM`])
-      } catch (e) { setAnalysisLog(prev => [...prev, `  ⚠ System info: ${e}`]) }
+        setAnalysisLog(prev => [...prev, `  ✓ ${data.cpu_name} | ${data.ram_total_gb?.toFixed(1)} GB RAM`])
+      }
 
-      // 2: Junk files
       logStep(ANALYSIS_STEPS[1])
-      try {
-        const junk = await invoke<JunkScanResult>("scan_junk_files")
+      if (results.scan_junk_files) {
+        const junk = results.scan_junk_files as JunkScanResult
         setJunkResult(junk)
-        const mb = junk.categories.reduce((s, c) => s + c.size_mb, 0)
-        setAnalysisLog(prev => [...prev, `  ✓ ${mb.toFixed(0)} MB junk across ${junk.categories.length} categories`])
-      } catch (e) { setAnalysisLog(prev => [...prev, `  ⚠ Junk scan: ${e}`]) }
+        const mb = junk.categories?.reduce((s, c) => s + c.size_mb, 0) ?? 0
+        setAnalysisLog(prev => [...prev, `  ✓ ${mb.toFixed(0)} MB junk across ${junk.categories?.length ?? 0} categories`])
+      }
 
-      // 3: Startup
       logStep(ANALYSIS_STEPS[2])
-      try {
-        const items = await invoke<StartupItem[]>("get_startup_items")
+      if (results.get_startup_items) {
+        const items = results.get_startup_items as StartupItem[]
         setStartupItems(items)
         setAnalysisLog(prev => [...prev, `  ✓ ${items.filter(s => s.enabled).length} enabled / ${items.length} total`])
-      } catch (e) { setAnalysisLog(prev => [...prev, `  ⚠ Startup: ${e}`]) }
+      }
 
-      // 4: Privacy
       logStep(ANALYSIS_STEPS[3])
-      try {
-        const p = await invoke<PrivacyScanResult>("scan_privacy_traces")
+      if (results.scan_privacy_traces) {
+        const p = results.scan_privacy_traces as PrivacyScanResult
         setPrivacyResult(p)
-        setAnalysisLog(prev => [...prev, `  ✓ ${p.categories.reduce((s, c) => s + c.items_count, 0)} traces`])
-      } catch (e) { setAnalysisLog(prev => [...prev, `  ⚠ Privacy: ${e}`]) }
+        setAnalysisLog(prev => [...prev, `  ✓ ${p.categories?.reduce((s, c) => s + c.items_count, 0) ?? 0} traces`])
+      }
 
-      // 5: Network
       logStep(ANALYSIS_STEPS[4])
-      try {
-        const net = await invoke<NetworkSpeed[]>("get_network_speed")
+      if (results.get_network_speed) {
+        const net = results.get_network_speed as NetworkSpeed[]
         setNetworkSpeeds(net)
         setAnalysisLog(prev => [...prev, `  ✓ ${net.length} adapter${net.length !== 1 ? "s" : ""}`])
-      } catch (e) { setAnalysisLog(prev => [...prev, `  ⚠ Network: ${e}`]) }
+      }
 
-      // 6: Disk health
       logStep(ANALYSIS_STEPS[5])
-      try {
-        const disks = await invoke<DiskHealthInfo[]>("get_smart_health")
+      if (results.get_smart_health) {
+        const disks = results.get_smart_health as DiskHealthInfo[]
         setFeatureSnap(prev => ({ ...prev, diskHealth: disks }))
         setAnalysisLog(prev => [...prev, `  ✓ ${disks.length} disk${disks.length !== 1 ? "s" : ""}`])
-      } catch (e) { setAnalysisLog(prev => [...prev, `  ⚠ Disk health: ${e}`]) }
+      }
 
-      // 7: Security
       logStep(ANALYSIS_STEPS[6])
-      try {
-        const [def, fw] = await Promise.allSettled([
-          invoke<DefenderInfo>("get_defender_status"),
-          invoke<FirewallRule[]>("get_firewall_rules"),
-        ])
-        const defender = def.status === "fulfilled" ? def.value : null
-        const fwCount = fw.status === "fulfilled" ? fw.value.filter(r => r.enabled).length : 0
-        setFeatureSnap(prev => ({ ...prev, defender, firewallCount: fwCount }))
-        setAnalysisLog(prev => [...prev, `  ✓ Defender: ${defender?.real_time_protection ? "Active" : "Off"} | Firewall: ${fwCount} rules`])
-      } catch (e) { setAnalysisLog(prev => [...prev, `  ⚠ Security: ${e}`]) }
+      const defender = results.get_defender_status as DefenderInfo | null
+      const fwRules = results.get_firewall_rules as FirewallRule[] | null
+      const fwCount = fwRules?.filter(r => r.enabled).length ?? 0
+      setFeatureSnap(prev => ({ ...prev, defender: defender ?? null, firewallCount: fwCount }))
+      setAnalysisLog(prev => [...prev, `  ✓ Defender: ${defender?.real_time_protection ? "Active" : "Off"} | Firewall: ${fwCount} rules`])
 
-      // 8: Software
       logStep(ANALYSIS_STEPS[7])
-      try {
-        const sw = await invoke<SoftwareItem[]>("check_software_updates")
-        const updates = sw.filter(s => s.needs_update).length
+      if (results.check_software_updates) {
+        const sw = results.check_software_updates as { needs_update: boolean }[]
+        const updates = Array.isArray(sw) ? sw.filter(s => s.needs_update).length : 0
         setFeatureSnap(prev => ({ ...prev, softwareUpdates: updates }))
-        setAnalysisLog(prev => [...prev, `  ✓ ${sw.length} software, ${updates} need updates`])
-      } catch (e) { setAnalysisLog(prev => [...prev, `  ⚠ Software: ${e}`]) }
+        setAnalysisLog(prev => [...prev, `  ✓ ${Array.isArray(sw) ? sw.length : 0} software, ${updates} need updates`])
+      }
 
-      // 9: Registry
       logStep(ANALYSIS_STEPS[8])
-      try {
-        const reg = await invoke<{ id: string }[]>("scan_registry_issues")
+      if (results.scan_registry_issues) {
+        const reg = results.scan_registry_issues as { id: string }[]
         const list = Array.isArray(reg) ? reg : []
         setRegistryIssuesList(list)
         setAnalysisLog(prev => [...prev, `  ✓ Registry: ${list.length > 0 ? `${list.length} issues` : "Clean"}`])
-      } catch (e) { setAnalysisLog(prev => [...prev, `  ⚠ Registry: ${e}`]) }
+      }
 
-      // 10: Score
       logStep(ANALYSIS_STEPS[9])
-      try {
-        const [hRes, sRes] = await Promise.allSettled([
-          invoke<HealthScore>("run_health_check"),
-          invoke<OptimizationScore>("get_optimization_score"),
-        ])
-        if (hRes.status === "fulfilled") setHealth(hRes.value)
-        if (sRes.status === "fulfilled") {
-          setOptScore(sRes.value)
-          setAnalysisLog(prev => [...prev, `  ✓ Score: ${sRes.value.overall_score}/100 — Grade ${sRes.value.grade}`])
+      if (results.run_health_check) {
+        setHealth(results.run_health_check as HealthScore)
+      }
+      if (results.get_optimization_score) {
+        const raw = results.get_optimization_score as OptimizationScore
+        // Ensure arrays are always arrays even if Rust returned unexpected shape
+        const score: OptimizationScore = {
+          ...raw,
+          overall_score: raw.overall_score ?? 0,
+          grade: raw.grade ?? "F",
+          categories: Array.isArray(raw.categories) ? raw.categories : [],
+          recommendations: Array.isArray(raw.recommendations) ? raw.recommendations : [],
         }
-      } catch (e) { setAnalysisLog(prev => [...prev, `  ⚠ Score: ${e}`]) }
+        setOptScore(score)
+        setAnalysisLog(prev => [...prev, `  ✓ Score: ${score.overall_score}/100 — Grade ${score.grade}`])
+      }
 
-      // 11: Done
+      // Done — only mark complete if we got at least the system overview
       logStep(ANALYSIS_STEPS[10])
-      setAnalysisComplete(true)
+      setAnalysisComplete(!!(results.get_system_overview))
     } catch (e) {
       setAnalysisLog(prev => [...prev, `❌ Analysis failed: ${e}`])
     } finally {
@@ -251,48 +303,94 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     if (running.current) return
     running.current = true
     setIsOptimizing(true)
+    setAnalysisLog([])
+    setAnalysisPercent(5)
+    setCurrentStep("Starting optimization...")
 
     try {
       // 1. Clean Junk
-      if (junkResult?.categories && junkResult.categories.length > 0) {
+      if (junkResult?.categories && Array.isArray(junkResult.categories) && junkResult.categories.length > 0) {
+        setCurrentStep("Cleaning junk files...")
+        setAnalysisPercent(20)
         setAnalysisLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Cleaning junk files...`])
         await invoke("clean_junk_files", { categoryIds: junkResult.categories.map(c => c.id) }).catch(() => {})
       }
       
       // 2. Clean Privacy
-      if (privacyResult?.categories && privacyResult.categories.length > 0) {
+      if (privacyResult?.categories && Array.isArray(privacyResult.categories) && privacyResult.categories.length > 0) {
+        setCurrentStep("Erasing privacy traces...")
+        setAnalysisPercent(40)
         setAnalysisLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Erasing privacy traces...`])
         await invoke("clean_privacy_traces", { categoryIds: privacyResult.categories.map(c => c.id) }).catch(() => {})
       }
 
       // 3. Fix Registry
-      if (registryIssuesList.length > 0) {
+      if (Array.isArray(registryIssuesList) && registryIssuesList.length > 0) {
+        setCurrentStep("Fixing registry issues...")
+        setAnalysisPercent(60)
         setAnalysisLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Fixing registry issues...`])
         await invoke("backup_registry").catch(() => {})
         await invoke("clean_registry_issues", { issueIds: registryIssuesList.map(i => i.id) }).catch(() => {})
       }
 
       // 4. Memory (if RAM > 70%)
-      if (overview && overview.ram_usage_percent > 70) {
+      if (overview && (overview.ram_usage_percent ?? 0) > 70) {
+        setCurrentStep("Optimizing memory...")
+        setAnalysisPercent(75)
         setAnalysisLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Optimizing memory...`])
         await invoke("optimize_memory").catch(() => {})
       }
 
-      setAnalysisLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Optimization complete! Re-analyzing system...`])
-      
-      // Allow analyzeSystem to run contextually
-      running.current = false
-      await analyzeSystem()
+      // 5. Quick targeted refresh — only the fast commands (skip SMART/software which hang)
+      setCurrentStep("Refreshing results...")
+      setAnalysisPercent(85)
+      setAnalysisLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Refreshing system data...`])
+      const refreshCmds = ["get_system_overview", "scan_junk_files", "scan_privacy_traces",
+                           "scan_registry_issues", "run_health_check", "get_optimization_score"]
+      const refreshResult = await invoke<Record<string, unknown>>("batch_invoke", { commands: refreshCmds }).catch(() => ({}))
+      const refreshed = (refreshResult ?? {}) as Record<string, unknown>
+
+      // Apply refreshed data
+      if (refreshed["get_system_overview"]) setOverview(refreshed["get_system_overview"] as SystemOverview)
+      if (refreshed["scan_junk_files"]) {
+        const raw = refreshed["scan_junk_files"] as JunkScanResult
+        setJunkResult({ ...raw, categories: Array.isArray(raw.categories) ? raw.categories : [] })
+      }
+      if (refreshed["scan_privacy_traces"]) {
+        const raw = refreshed["scan_privacy_traces"] as PrivacyScanResult
+        setPrivacyResult({ ...raw, categories: Array.isArray(raw.categories) ? raw.categories : [] })
+      }
+      if (refreshed["scan_registry_issues"]) {
+        const issues = refreshed["scan_registry_issues"] as { id: string }[]
+        setRegistryIssuesList(Array.isArray(issues) ? issues : [])
+      }
+      if (refreshed["run_health_check"]) setHealth(refreshed["run_health_check"] as HealthScore)
+      if (refreshed["get_optimization_score"]) {
+        const raw = refreshed["get_optimization_score"] as OptimizationScore
+        setOptScore({
+          ...raw,
+          overall_score: raw.overall_score ?? 0,
+          grade: raw.grade ?? "F",
+          categories: Array.isArray(raw.categories) ? raw.categories : [],
+          recommendations: Array.isArray(raw.recommendations) ? raw.recommendations : [],
+        })
+      }
+
+      setAnalysisPercent(100)
+      setCurrentStep("Optimization complete!")
+      setAnalysisLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ✅ Optimization complete!`])
     } catch (e) {
       setAnalysisLog(prev => [...prev, `❌ Optimization failed: ${e}`])
+    } finally {
       setIsOptimizing(false)
       running.current = false
     }
-  }, [junkResult, privacyResult, registryIssuesList, overview, analyzeSystem])
+  }, [junkResult, privacyResult, registryIssuesList, overview])
 
   return (
     <DashboardContext.Provider value={{
       isAnalyzing, isOptimizing, analysisComplete, analysisPercent, analysisLog, currentStep,
+      isCachedLoad,
       overview, health, junkResult, privacyResult, startupItems, networkSpeeds,
       registryIssuesList, optScore, featureSnap,
       analyzeSystem, optimizeSystem

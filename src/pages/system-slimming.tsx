@@ -24,7 +24,7 @@ export default function SystemSlimmingPage() {
     setCleaned(new Set())
     try {
       const result = await invoke<SlimTarget[]>("scan_slim_targets")
-      setTargets(result)
+      setTargets(Array.isArray(result) ? result : [])
     } catch (e) { toast.error(String(e)) }
     finally { setLoading(false) }
   }
@@ -82,7 +82,7 @@ export default function SystemSlimmingPage() {
                     <p className="text-xs text-muted-foreground mt-0.5">{t.description}</p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0 ml-4">
-                    <span className="text-sm font-medium">{t.size_mb > 0 ? `${t.size_mb.toFixed(1)} MB` : "Variable"}</span>
+                    <span className="text-sm font-medium">{(t.size_mb ?? 0) > 0 ? `${(t.size_mb ?? 0).toFixed(1)} MB` : "Variable"}</span>
                     {cleaned.has(t.id) ? (
                       <CheckCircle className="h-5 w-5 text-emerald-500" />
                     ) : (

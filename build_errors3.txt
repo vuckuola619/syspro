@@ -1,0 +1,189 @@
+   Compiling sabi v1.3.0 (C:\Users\bati-\OneDrive\Documents\AG-SysPro\src-tauri)
+warning: unused import: `std::collections::HashMap`
+ --> src\modules\system.rs:4:5
+  |
+4 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `read_reg_dword` and `version_is_newer`
+  --> src\modules\system.rs:13:38
+   |
+13 | use crate::util::{hidden_powershell, read_reg_dword, version_is_newer};
+   |                                      ^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^
+
+warning: unused import: `sanitize_powershell_input`
+  --> src\modules\performance.rs:12:38
+   |
+12 | use crate::util::{hidden_powershell, sanitize_powershell_input, scan_directory_size};
+   |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::env`
+ --> src\modules\network.rs:2:5
+  |
+2 | use std::env;
+  |     ^^^^^^^^
+
+warning: unused variable: `worst`
+   --> src\modules\disk.rs:520:21
+    |
+520 |                 let worst = attr.get("worst").and_then(|v| v.as_i64()).unwrap_or(100);
+    |                     ^^^^^ help: if this is intentional, prefix it with an underscore: `_worst`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `stdout`
+   --> src\modules\disk.rs:582:9
+    |
+582 |     let stdout = match output {
+    |         ^^^^^^ help: if this is intentional, prefix it with an underscore: `_stdout`
+
+warning: type alias `SabiResult` is never used
+  --> src\error.rs:77:10
+   |
+77 | pub type SabiResult<T> = Result<T, SabiError>;
+   |          ^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `bytes_to_gb` is never used
+  --> src\util.rs:30:8
+   |
+30 | pub fn bytes_to_gb(bytes: u64) -> f64 {
+   |        ^^^^^^^^^^^
+
+warning: function `get_config_dir` is never used
+  --> src\util.rs:79:8
+   |
+79 | pub fn get_config_dir() -> PathBuf {
+   |        ^^^^^^^^^^^^^^
+
+warning: function `chrono_now` is never used
+  --> src\util.rs:93:8
+   |
+93 | pub fn chrono_now() -> String {
+   |        ^^^^^^^^^^
+
+warning: function `version_is_newer` is never used
+  --> src\util.rs:99:8
+   |
+99 | pub fn version_is_newer(current: &str, latest: &str) -> bool {
+   |        ^^^^^^^^^^^^^^^^
+
+warning: trait `CommandCreationFlags` is never used
+   --> src\util.rs:119:11
+    |
+119 | pub trait CommandCreationFlags {
+    |           ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `EmptyFolderItem` is never constructed
+  --> src\modules\cleaner.rs:32:12
+   |
+32 | pub struct EmptyFolderItem {
+   |            ^^^^^^^^^^^^^^^
+
+warning: struct `LargeFileItem` is never constructed
+  --> src\modules\cleaner.rs:48:12
+   |
+48 | pub struct LargeFileItem {
+   |            ^^^^^^^^^^^^^
+
+warning: struct `DuplicateGroup` is never constructed
+  --> src\modules\cleaner.rs:69:12
+   |
+69 | pub struct DuplicateGroup {
+   |            ^^^^^^^^^^^^^^
+
+warning: struct `DuplicateFile` is never constructed
+  --> src\modules\cleaner.rs:77:12
+   |
+77 | pub struct DuplicateFile {
+   |            ^^^^^^^^^^^^^
+
+warning: function `is_protected_folder` is never used
+  --> src\modules\cleaner.rs:86:4
+   |
+86 | fn is_protected_folder(path: &std::path::Path) -> bool {
+   |    ^^^^^^^^^^^^^^^^^^^
+
+warning: function `is_truly_empty` is never used
+  --> src\modules\cleaner.rs:97:4
+   |
+97 | fn is_truly_empty(path: &std::path::Path) -> bool {
+   |    ^^^^^^^^^^^^^^
+
+warning: function `categorize_file` is never used
+   --> src\modules\cleaner.rs:104:4
+    |
+104 | fn categorize_file(ext: &str) -> String {
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `find_duplicate_files` is never used
+   --> src\modules\cleaner.rs:422:14
+    |
+422 | pub async fn find_duplicate_files(target_dir: String, min_size_kb: u64) -> Result<Vec<DuplicateGroup>, String> {
+    |              ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `AppUpdateInfo` is never constructed
+   --> src\modules\system.rs:160:12
+    |
+160 | pub struct AppUpdateInfo {
+    |            ^^^^^^^^^^^^^
+
+warning: struct `OptimizationScore` is never constructed
+   --> src\modules\performance.rs:111:12
+    |
+111 | pub struct OptimizationScore {
+    |            ^^^^^^^^^^^^^^^^^
+
+warning: struct `ScoreCategory` is never constructed
+   --> src\modules\performance.rs:119:12
+    |
+119 | pub struct ScoreCategory {
+    |            ^^^^^^^^^^^^^
+
+warning: struct `Recommendation` is never constructed
+   --> src\modules\performance.rs:127:12
+    |
+127 | pub struct Recommendation {
+    |            ^^^^^^^^^^^^^^
+
+warning: struct `UpdateInfo` is never constructed
+   --> src\modules\network.rs:108:12
+    |
+108 | pub struct UpdateInfo {
+    |            ^^^^^^^^^^
+
+warning: function `invalidate` is never used
+  --> src\modules\cache.rs:51:8
+   |
+51 | pub fn invalidate(key: &str) {
+   |        ^^^^^^^^^^
+
+warning: function `is_path_excluded` is never used
+   --> src\modules\policy.rs:108:8
+    |
+108 | pub fn is_path_excluded(path: &str) -> bool {
+    |        ^^^^^^^^^^^^^^^^
+
+warning: function `hash_file` is never used
+  --> src\modules\audit.rs:93:8
+   |
+93 | pub fn hash_file(path: &str) -> String {
+   |        ^^^^^^^^^
+
+warning: function `hash_string` is never used
+   --> src\modules\audit.rs:105:8
+    |
+105 | pub fn hash_string(value: &str) -> String {
+    |        ^^^^^^^^^^^
+
+warning: function `backup_registry_key` is never used
+  --> src\modules\rollback.rs:81:8
+   |
+81 | pub fn backup_registry_key(key_path: &str) -> Result<String, String> {
+   |        ^^^^^^^^^^^^^^^^^^^
+
+warning: `sabi` (lib) generated 30 warnings (run `cargo fix --lib -p sabi` to apply 6 suggestions)
+    Finished `release` profile [optimized] target(s) in 2m 01s

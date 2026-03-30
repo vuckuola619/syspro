@@ -1,4 +1,5 @@
-import { NavLink } from "react-router-dom"
+import { NavLink, useNavigate } from "react-router-dom"
+import { useDashboard } from "@/context/dashboard-context"
 import {
   LayoutDashboard,
   Trash2,
@@ -53,12 +54,11 @@ import { cn } from "@/lib/utils"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useState, useMemo, useRef, useEffect } from "react"
 
-type NavItem = { name: string; href: string; icon: any; category: string }
+type NavItem = { name: string; href: string; icon: any; category: string; action?: string }
 
 const navigation: NavItem[] = [
   // Overview
   { name: "Dashboard", href: "/", icon: LayoutDashboard, category: "Overview" },
-  { name: "One-Click Optimize", href: "/one-click", icon: Zap, category: "Overview" },
 
   // Cleaning
   { name: "Junk Cleaner", href: "/junk-cleaner", icon: Trash2, category: "Cleaning" },
@@ -126,6 +126,15 @@ export function Sidebar() {
   const [activeCategory, setActiveCategory] = useState("All")
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate()
+  const { optimizeSystem, isOptimizing, isAnalyzing } = useDashboard()
+
+  function handleAction(item: NavItem) {
+    if (item.action === "optimize") {
+      navigate("/")
+      setTimeout(() => optimizeSystem(), 50)
+    }
+  }
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -211,20 +220,36 @@ export function Sidebar() {
           {search || activeCategory !== "All" ? (
             // Flat filtered list
             filtered.length > 0 ? filtered.map((item) => (
-              <NavLink
-                key={item.href}
-                to={item.href}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
-                    isActive ? "bg-primary/8 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                  )
-                }
-              >
-                <item.icon className="h-4 w-4 shrink-0" />
-                <span className="flex-1">{item.name}</span>
-                <span className="text-[9px] text-muted-foreground/60">{item.category}</span>
-              </NavLink>
+              item.action ? (
+                <button
+                  key={item.href}
+                  onClick={() => handleAction(item)}
+                  disabled={isOptimizing || isAnalyzing}
+                  className={cn(
+                    "w-full flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
+                    "text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50"
+                  )}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  <span className="flex-1">{item.name}</span>
+                  <span className="text-[9px] text-muted-foreground/60">{item.category}</span>
+                </button>
+              ) : (
+                <NavLink
+                  key={item.href}
+                  to={item.href}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
+                      isActive ? "bg-primary/8 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                    )
+                  }
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  <span className="flex-1">{item.name}</span>
+                  <span className="text-[9px] text-muted-foreground/60">{item.category}</span>
+                </NavLink>
+              )
             )) : (
               <p className="text-xs text-muted-foreground text-center py-4">No features found</p>
             )
@@ -237,19 +262,34 @@ export function Sidebar() {
                 <div key={cat}>
                   <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider px-3 pt-3 pb-1">{cat}</p>
                   {items.map((item) => (
-                    <NavLink
-                      key={item.href}
-                      to={item.href}
-                      className={({ isActive }) =>
-                        cn(
-                          "flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
-                          isActive ? "bg-primary/8 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                        )
-                      }
-                    >
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      {item.name}
-                    </NavLink>
+                    item.action ? (
+                      <button
+                        key={item.href}
+                        onClick={() => handleAction(item)}
+                        disabled={isOptimizing || isAnalyzing}
+                        className={cn(
+                          "w-full flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
+                          "text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50"
+                        )}
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        {isOptimizing ? "Optimizing..." : item.name}
+                      </button>
+                    ) : (
+                      <NavLink
+                        key={item.href}
+                        to={item.href}
+                        className={({ isActive }) =>
+                          cn(
+                            "flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
+                            isActive ? "bg-primary/8 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                          )
+                        }
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        {item.name}
+                      </NavLink>
+                    )
                   ))}
                 </div>
               )

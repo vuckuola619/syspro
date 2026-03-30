@@ -26,7 +26,7 @@ export default function PasswordGeneratorPage() {
     setCopied(false)
     try {
       const res = await invoke<GeneratedPassword>("generate_password", {
-        length, useUppercase: uppercase, useLowercase: lowercase, useNumbers: numbers, useSymbols: symbols,
+        length, uppercase, lowercase, numbers, symbols,
       })
       setResult(res)
     } catch (e) { toast.error(String(e)) }

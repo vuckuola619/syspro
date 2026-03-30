@@ -1,11 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { AppLayout } from "@/components/layout/app-layout"
-import { lazy, Suspense, useState, useEffect } from "react"
+import { useState, useEffect, Suspense, lazy, Component, type ReactNode, type ErrorInfo } from "react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { invoke } from "@tauri-apps/api/core"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { AIProvider } from "@/context/ai-context"
 import { DashboardProvider } from "@/context/dashboard-context"
+import { PolicyProvider } from "@/context/policy-context"
 import { FloatingAIChat } from "@/components/floating-ai-chat"
+import { CommandPalette } from "@/components/command-palette"
 
 // ─── Lazy-loaded pages (code-split for faster startup) ───
 const DashboardPage = lazy(() => import("@/pages/dashboard"))
@@ -61,6 +64,7 @@ const LoginMonitorPage = lazy(() => import("@/pages/login-monitor"))
 const FileRecoveryPage = lazy(() => import("@/pages/file-recovery"))
 const CloudCleanerPage = lazy(() => import("@/pages/cloud-cleaner"))
 const MultiUserPage = lazy(() => import("@/pages/multi-user"))
+const RollbackHistoryPage = lazy(() => import("@/pages/rollback-history"))
 
 
 // ─── Loading Skeleton ───
@@ -83,6 +87,37 @@ function PageSkeleton() {
       </div>
     </div>
   )
+}
+
+// ─── Error Boundary (prevents white blank screen on render crashes) ───
+interface EBState { hasError: boolean; message: string }
+class PageErrorBoundary extends Component<{ children: ReactNode }, EBState> {
+  state: EBState = { hasError: false, message: "" }
+  static getDerivedStateFromError(err: Error): EBState {
+    return { hasError: true, message: err?.message || String(err) }
+  }
+  componentDidCatch(err: Error, info: ErrorInfo) {
+    console.error("[SABI] Page render error:", err, info)
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-8 gap-4">
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 max-w-md w-full text-center space-y-3">
+            <p className="text-lg font-semibold text-destructive">Something went wrong</p>
+            <p className="text-sm text-muted-foreground font-mono">{this.state.message}</p>
+            <button
+              className="text-sm underline text-muted-foreground hover:text-foreground mt-2"
+              onClick={() => this.setState({ hasError: false, message: "" })}
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
 }
 
 // ─── Update Banner ───
@@ -140,6 +175,15 @@ function UpdateBanner({ info, onDismiss }: { info: AppUpdateInfo; onDismiss: () 
 }
 
 // ─── App ───
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes cache
+    },
+  },
+})
+
 function App() {
   const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null)
   const [dismissed, setDismissed] = useState(false)
@@ -153,74 +197,80 @@ function App() {
   }, [])
 
   return (
+    <QueryClientProvider client={queryClient}>
+    <PolicyProvider>
     <AIProvider>
     <DashboardProvider>
     <BrowserRouter>
+      <CommandPalette />
       {updateInfo && !dismissed && (
         <UpdateBanner info={updateInfo} onDismiss={() => setDismissed(true)} />
       )}
       <Routes>
         <Route element={<AppLayout />}>
-          <Route path="/" element={<Suspense fallback={<PageSkeleton />}><DashboardPage /></Suspense>} />
-          <Route path="/junk-cleaner" element={<Suspense fallback={<PageSkeleton />}><JunkCleanerPage /></Suspense>} />
-          <Route path="/registry" element={<Suspense fallback={<PageSkeleton />}><RegistryCleanerPage /></Suspense>} />
-          <Route path="/startup" element={<Suspense fallback={<PageSkeleton />}><StartupManagerPage /></Suspense>} />
-          <Route path="/performance" element={<Suspense fallback={<PageSkeleton />}><PerformancePage /></Suspense>} />
-          <Route path="/privacy" element={<Suspense fallback={<PageSkeleton />}><PrivacyPage /></Suspense>} />
-          <Route path="/software-updater" element={<Suspense fallback={<PageSkeleton />}><SoftwareUpdaterPage /></Suspense>} />
-          <Route path="/driver-updater" element={<Suspense fallback={<PageSkeleton />}><DriverUpdaterPage /></Suspense>} />
-          <Route path="/file-shredder" element={<Suspense fallback={<PageSkeleton />}><FileShredderPage /></Suspense>} />
-          <Route path="/duplicate-finder" element={<Suspense fallback={<PageSkeleton />}><DuplicateFinderPage /></Suspense>} />
-          <Route path="/system-info" element={<Suspense fallback={<PageSkeleton />}><SystemInfoPage /></Suspense>} />
-          <Route path="/live-monitor" element={<Suspense fallback={<PageSkeleton />}><LiveMonitorPage /></Suspense>} />
-          <Route path="/disk-analyzer" element={<Suspense fallback={<PageSkeleton />}><DiskAnalyzerPage /></Suspense>} />
-          <Route path="/app-uninstaller" element={<Suspense fallback={<PageSkeleton />}><AppUninstallerPage /></Suspense>} />
-          <Route path="/scheduled-clean" element={<Suspense fallback={<PageSkeleton />}><ScheduledCleanPage /></Suspense>} />
-          <Route path="/disk-defrag" element={<Suspense fallback={<PageSkeleton />}><DiskDefragPage /></Suspense>} />
-          <Route path="/internet-booster" element={<Suspense fallback={<PageSkeleton />}><InternetBoosterPage /></Suspense>} />
-          <Route path="/file-splitter" element={<Suspense fallback={<PageSkeleton />}><FileSplitterPage /></Suspense>} />
-          <Route path="/debloater" element={<Suspense fallback={<PageSkeleton />}><WindowsDebloaterPage /></Suspense>} />
-          <Route path="/privacy-hardening" element={<Suspense fallback={<PageSkeleton />}><PrivacyHardeningPage /></Suspense>} />
-          <Route path="/restore-points" element={<Suspense fallback={<PageSkeleton />}><RestorePointsPage /></Suspense>} />
-          <Route path="/windows-tweaks" element={<Suspense fallback={<PageSkeleton />}><WindowsTweaksPage /></Suspense>} />
-          <Route path="/service-manager" element={<Suspense fallback={<PageSkeleton />}><ServiceManagerPage /></Suspense>} />
-          <Route path="/edge-manager" element={<Suspense fallback={<PageSkeleton />}><EdgeManagerPage /></Suspense>} />
-          <Route path="/network-monitor" element={<Suspense fallback={<PageSkeleton />}><NetworkMonitorPage /></Suspense>} />
-          <Route path="/hosts-editor" element={<Suspense fallback={<PageSkeleton />}><HostsEditorPage /></Suspense>} />
-          <Route path="/update-manager" element={<Suspense fallback={<PageSkeleton />}><UpdateManagerPage /></Suspense>} />
-          <Route path="/firewall-manager" element={<Suspense fallback={<PageSkeleton />}><FirewallManagerPage /></Suspense>} />
-          <Route path="/benchmarks" element={<Suspense fallback={<PageSkeleton />}><BenchmarksPage /></Suspense>} />
-          <Route path="/turbo-boost" element={<Suspense fallback={<PageSkeleton />}><TurboBoostPage /></Suspense>} />
-          <Route path="/speed-monitor" element={<Suspense fallback={<PageSkeleton />}><SpeedMonitorPage /></Suspense>} />
-          <Route path="/popup-blocker" element={<Suspense fallback={<PageSkeleton />}><PopupBlockerPage /></Suspense>} />
-          <Route path="/file-hider" element={<Suspense fallback={<PageSkeleton />}><FileHiderPage /></Suspense>} />
-          <Route path="/password-generator" element={<Suspense fallback={<PageSkeleton />}><PasswordGeneratorPage /></Suspense>} />
-          <Route path="/registry-defrag" element={<Suspense fallback={<PageSkeleton />}><RegistryDefragPage /></Suspense>} />
-          <Route path="/system-slimming" element={<Suspense fallback={<PageSkeleton />}><SystemSlimmingPage /></Suspense>} />
-          <Route path="/speed-test" element={<Suspense fallback={<PageSkeleton />}><SpeedTestPage /></Suspense>} />
-          <Route path="/disk-health" element={<Suspense fallback={<PageSkeleton />}><DiskHealthPage /></Suspense>} />
-          <Route path="/export-report" element={<Suspense fallback={<PageSkeleton />}><ExportReportPage /></Suspense>} />
-          <Route path="/large-file-finder" element={<Suspense fallback={<PageSkeleton />}><LargeFileFinderPage /></Suspense>} />
-          <Route path="/empty-folder-scanner" element={<Suspense fallback={<PageSkeleton />}><EmptyFolderScannerPage /></Suspense>} />
+          <Route path="/" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><DashboardPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/junk-cleaner" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><JunkCleanerPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/registry" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><RegistryCleanerPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/startup" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><StartupManagerPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/performance" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><PerformancePage /></Suspense></PageErrorBoundary>} />
+          <Route path="/privacy" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><PrivacyPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/software-updater" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><SoftwareUpdaterPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/driver-updater" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><DriverUpdaterPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/file-shredder" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><FileShredderPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/duplicate-finder" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><DuplicateFinderPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/system-info" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><SystemInfoPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/live-monitor" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><LiveMonitorPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/disk-analyzer" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><DiskAnalyzerPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/app-uninstaller" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><AppUninstallerPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/scheduled-clean" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><ScheduledCleanPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/disk-defrag" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><DiskDefragPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/internet-booster" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><InternetBoosterPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/file-splitter" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><FileSplitterPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/debloater" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><WindowsDebloaterPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/privacy-hardening" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><PrivacyHardeningPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/restore-points" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><RestorePointsPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/windows-tweaks" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><WindowsTweaksPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/service-manager" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><ServiceManagerPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/edge-manager" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><EdgeManagerPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/network-monitor" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><NetworkMonitorPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/hosts-editor" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><HostsEditorPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/update-manager" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><UpdateManagerPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/firewall-manager" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><FirewallManagerPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/benchmarks" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><BenchmarksPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/turbo-boost" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><TurboBoostPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/speed-monitor" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><SpeedMonitorPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/popup-blocker" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><PopupBlockerPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/file-hider" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><FileHiderPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/password-generator" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><PasswordGeneratorPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/registry-defrag" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><RegistryDefragPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/system-slimming" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><SystemSlimmingPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/speed-test" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><SpeedTestPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/disk-health" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><DiskHealthPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/export-report" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><ExportReportPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/large-file-finder" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><LargeFileFinderPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/empty-folder-scanner" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><EmptyFolderScannerPage /></Suspense></PageErrorBoundary>} />
           <Route path="/cpu-saver" element={<Navigate to="/turbo-boost" replace />} />
-          <Route path="/smart-clean" element={<Suspense fallback={<PageSkeleton />}><SmartCleanPage /></Suspense>} />
-          <Route path="/app-junk" element={<Suspense fallback={<PageSkeleton />}><AppJunkPage /></Suspense>} />
-          <Route path="/browser-extensions" element={<Suspense fallback={<PageSkeleton />}><BrowserExtensionsPage /></Suspense>} />
-          <Route path="/anti-spyware" element={<Suspense fallback={<PageSkeleton />}><AntiSpywarePage /></Suspense>} />
-          <Route path="/dns-protector" element={<Suspense fallback={<PageSkeleton />}><DnsProtectorPage /></Suspense>} />
-          <Route path="/ad-blocker" element={<Suspense fallback={<PageSkeleton />}><AdBlockerPage /></Suspense>} />
-          <Route path="/login-monitor" element={<Suspense fallback={<PageSkeleton />}><LoginMonitorPage /></Suspense>} />
-          <Route path="/file-recovery" element={<Suspense fallback={<PageSkeleton />}><FileRecoveryPage /></Suspense>} />
-          <Route path="/cloud-cleaner" element={<Suspense fallback={<PageSkeleton />}><CloudCleanerPage /></Suspense>} />
-          <Route path="/multi-user" element={<Suspense fallback={<PageSkeleton />}><MultiUserPage /></Suspense>} />
+          <Route path="/smart-clean" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><SmartCleanPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/app-junk" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><AppJunkPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/browser-extensions" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><BrowserExtensionsPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/anti-spyware" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><AntiSpywarePage /></Suspense></PageErrorBoundary>} />
+          <Route path="/dns-protector" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><DnsProtectorPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/ad-blocker" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><AdBlockerPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/login-monitor" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><LoginMonitorPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/file-recovery" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><FileRecoveryPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/cloud-cleaner" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><CloudCleanerPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/multi-user" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><MultiUserPage /></Suspense></PageErrorBoundary>} />
+          <Route path="/rollback-history" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><RollbackHistoryPage /></Suspense></PageErrorBoundary>} />
           <Route path="/smart-optimize" element={<Navigate to="/" replace />} />
-          <Route path="/settings" element={<Suspense fallback={<PageSkeleton />}><SettingsPage /></Suspense>} />
+          <Route path="/settings" element={<PageErrorBoundary><Suspense fallback={<PageSkeleton />}><SettingsPage /></Suspense></PageErrorBoundary>} />
         </Route>
       </Routes>
     </BrowserRouter>
     <FloatingAIChat />
     </DashboardProvider>
     </AIProvider>
+    </PolicyProvider>
+    </QueryClientProvider>
   )
 }
 

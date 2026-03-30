@@ -50,7 +50,14 @@ export default function SmartOptimizePage() {
   async function analyze() {
     setIsLoading(true)
     try {
-      const data = await invoke<OptimizationScore>("get_optimization_score")
+      const raw = await invoke<OptimizationScore>("get_optimization_score")
+      const data: OptimizationScore = {
+        ...raw,
+        overall_score: raw.overall_score ?? 0,
+        grade: raw.grade ?? "F",
+        categories: Array.isArray(raw.categories) ? raw.categories : [],
+        recommendations: Array.isArray(raw.recommendations) ? raw.recommendations : [],
+      }
       setScore(data)
       toast.success(`Score: ${data.overall_score}/100 — Grade ${data.grade}`)
     } catch (e) { toast.error(String(e)) }
@@ -100,7 +107,7 @@ export default function SmartOptimizePage() {
                 <span className="text-4xl font-bold" style={{ color: GRADE_COLORS[score.grade] }}>{score.grade}</span>
                 <span className="text-sm text-muted-foreground">System Grade</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">{score.recommendations.length} recommendation(s)</p>
+              <p className="text-xs text-muted-foreground mt-1">{(score.recommendations ?? []).length} recommendation(s)</p>
             </div>
           </div>
 
@@ -108,19 +115,19 @@ export default function SmartOptimizePage() {
           <Card>
             <CardContent className="p-4 space-y-2">
               <p className="text-sm font-medium mb-3">Category Breakdown</p>
-              {score.categories.map(cat => (
+              {Array.isArray(score.categories) && score.categories.map(cat => (
                 <div key={cat.name} className="flex items-center gap-3 p-2 rounded-lg bg-muted/20">
                   <span className="text-sm font-medium w-24">{cat.name}</span>
                   <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all"
                       style={{
-                        width: `${(cat.score / cat.max_score) * 100}%`,
-                        backgroundColor: cat.score >= cat.max_score * 0.75 ? "#22c55e" : cat.score >= cat.max_score * 0.5 ? "#eab308" : "#ef4444",
+                        width: `${((cat.score ?? 0) / (cat.max_score || 1)) * 100}%`,
+                        backgroundColor: (cat.score ?? 0) >= (cat.max_score ?? 0) * 0.75 ? "#22c55e" : (cat.score ?? 0) >= (cat.max_score ?? 0) * 0.5 ? "#eab308" : "#ef4444",
                       }}
                     />
                   </div>
-                  <span className="text-xs font-mono w-12 text-right">{cat.score}/{cat.max_score}</span>
+                  <span className="text-xs font-mono w-12 text-right">{cat.score ?? 0}/{cat.max_score ?? 0}</span>
                   <span className="text-xs text-muted-foreground w-28 text-right">{cat.status}</span>
                 </div>
               ))}
@@ -128,7 +135,7 @@ export default function SmartOptimizePage() {
           </Card>
 
           {/* Recommendations */}
-          {score.recommendations.length > 0 && (
+          {Array.isArray(score.recommendations) && score.recommendations.length > 0 && (
             <Card>
               <CardContent className="p-4 space-y-2">
                 <p className="text-sm font-medium mb-3">Recommendations</p>
@@ -154,7 +161,7 @@ export default function SmartOptimizePage() {
             </Card>
           )}
 
-          {score.recommendations.length === 0 && (
+          {(!Array.isArray(score.recommendations) || score.recommendations.length === 0) && (
             <Card className="border-green-200 dark:border-green-500/20">
               <CardContent className="p-4 flex items-center gap-3">
                 <CheckCircle className="h-5 w-5 text-green-500" />

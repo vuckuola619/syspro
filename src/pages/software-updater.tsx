@@ -31,7 +31,7 @@ export default function SoftwareUpdaterPage() {
     setIsScanning(true)
     try {
       const data = await invoke<SoftwareItem[]>("check_software_updates")
-      setApps(data)
+      setApps(Array.isArray(data) ? data : [])
       setHasScanned(true)
     } catch (e) {toast.error("Update failed: " + String(e))
  toast.error(String(e)) }

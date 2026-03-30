@@ -68,8 +68,9 @@ export default function LargeFileFinderPage() {
         targetDir: selectedPath as string,
         minSizeMb: minSize,
       })
-      setFiles(data)
-      toast.success(`Found ${data.length} large files`)
+      const safeData = Array.isArray(data) ? data : []
+      setFiles(safeData)
+      toast.success(`Found ${safeData.length} large files`)
     } catch (e) {
       toast.error(String(e))
     } finally {

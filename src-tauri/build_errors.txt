@@ -1,0 +1,83 @@
+    Checking sabi v1.3.0 (C:\Users\bati-\OneDrive\Documents\AG-SysPro\src-tauri)
+error: cannot find macro `warn` in this scope
+  --> src\modules\batch.rs:53:13
+   |
+53 |             warn!("[Batch] Command '{}' timed out after {}s ΓÇö returning Null", cmd, CMD_TIMEOUT_SECS);
+   |             ^^^^
+   |
+   = note: `warn` is in scope, but it is an attribute: `#[warn]`
+help: consider importing this macro
+   |
+ 1 + use tracing::warn;
+   |
+
+error[E0425]: cannot find function `timeout` in this scope
+  --> src\modules\batch.rs:28:18
+   |
+28 |     let result = timeout(Duration::from_secs(CMD_TIMEOUT_SECS), async move {
+   |                  ^^^^^^^ not found in this scope
+   |
+help: consider importing this function
+   |
+ 1 + use tokio::time::timeout;
+   |
+
+error[E0433]: failed to resolve: use of undeclared type `Duration`
+  --> src\modules\batch.rs:28:26
+   |
+28 |     let result = timeout(Duration::from_secs(CMD_TIMEOUT_SECS), async move {
+   |                          ^^^^^^^^ use of undeclared type `Duration`
+   |
+help: consider importing one of these items
+   |
+ 1 + use std::time::Duration;
+   |
+ 1 + use chrono::Duration;
+   |
+ 1 + use tokio::time::Duration;
+   |
+
+warning: unused import: `std::collections::HashMap`
+ --> src\modules\system.rs:4:5
+  |
+4 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `read_reg_dword` and `version_is_newer`
+  --> src\modules\system.rs:13:38
+   |
+13 | use crate::util::{hidden_powershell, read_reg_dword, version_is_newer};
+   |                                      ^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^
+
+warning: unused import: `sanitize_powershell_input`
+  --> src\modules\performance.rs:12:38
+   |
+12 | use crate::util::{hidden_powershell, sanitize_powershell_input, scan_directory_size};
+   |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::env`
+ --> src\modules\network.rs:2:5
+  |
+2 | use std::env;
+  |     ^^^^^^^^
+
+warning: unused variable: `worst`
+   --> src\modules\disk.rs:520:21
+    |
+520 |                 let worst = attr.get("worst").and_then(|v| v.as_i64()).unwrap_or(100);
+    |                     ^^^^^ help: if this is intentional, prefix it with an underscore: `_worst`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `stdout`
+   --> src\modules\disk.rs:582:9
+    |
+582 |     let stdout = match output {
+    |         ^^^^^^ help: if this is intentional, prefix it with an underscore: `_stdout`
+
+Some errors have detailed explanations: E0425, E0433.
+For more information about an error, try `rustc --explain E0425`.
+warning: `sabi` (lib) generated 6 warnings
+error: could not compile `sabi` (lib) due to 3 previous errors; 6 warnings emitted

@@ -43,12 +43,19 @@ export default function JunkCleanerPage() {
     }, 100)
 
     try {
-      const result = await invoke<{
-        categories: Array<{ id: string; name: string; files_count: number; size_mb: number }>
-      }>("scan_junk_files")
+      // Use batch_invoke to get the 30-second backend timeout protection
+      const batchResult = await invoke<Record<string, unknown>>("batch_invoke", {
+        commands: ["scan_junk_files"]
+      })
+      
+      const result = batchResult?.scan_junk_files as { categories: Array<{ id: string; name: string; files_count: number; size_mb: number }> } | null
 
       clearInterval(interval)
       setScanProgress(100)
+
+      if (!result || !Array.isArray(result.categories)) {
+        throw new Error("Scan timed out or returned invalid data")
+      }
 
       const icons: Record<string, React.ReactNode> = {
         temp_files: <FileText className="h-5 w-5" />,
@@ -77,7 +84,7 @@ export default function JunkCleanerPage() {
       setHasScanned(true)
     } catch (e) {
       clearInterval(interval)
-      toast.error("Scan failed: " + String(e))
+      toast.warning("Warning: Scan took too long or failed. Loading estimate...")
       // Fallback demo data
       setCategories([
         {

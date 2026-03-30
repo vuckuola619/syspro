@@ -23,9 +23,10 @@ export default function FileRecoveryPage() {
     setIsLoading(true)
     try {
       const data = await invoke<RecycleBinItem[]>("get_recycle_bin_items")
-      setItems(data)
+      const safeData = Array.isArray(data) ? data : []
+      setItems(safeData)
       setSelected(new Set())
-      const total = data.reduce((s, i) => s + i.size_bytes, 0)
+      const total = safeData.reduce((s, i) => s + (i.size_bytes ?? 0), 0)
       const display = total >= 1073741824 ? `${(total / 1073741824).toFixed(1)} GB` :
         total >= 1048576 ? `${(total / 1048576).toFixed(1)} MB` : `${(total / 1024).toFixed(1)} KB`
       toast.success(`${data.length} items (${display})`)

@@ -38,7 +38,7 @@ export default function AppUninstallerPage() {
     setIsLoading(true)
     try {
       const data = await invoke<InstalledApp[]>("get_installed_apps")
-      setApps(data)
+      setApps(Array.isArray(data) ? data : [])
       setHasLoaded(true)
     } catch (e) {
       toast.error(String(e))
@@ -189,7 +189,7 @@ export default function AppUninstallerPage() {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium truncate">{app.name}</p>
                       {app.version && <Badge variant="secondary" className="text-[10px] shrink-0">{app.version}</Badge>}
-                      {app.size_mb > 0 && <span className="text-[10px] text-muted-foreground shrink-0">{app.size_mb.toFixed(1)} MB</span>}
+                      {(app.size_mb ?? 0) > 0 && <span className="text-[10px] text-muted-foreground shrink-0">{(app.size_mb ?? 0).toFixed(1)} MB</span>}
                     </div>
                     <p className="text-xs text-muted-foreground truncate">{app.publisher || "Unknown publisher"}</p>
                   </div>

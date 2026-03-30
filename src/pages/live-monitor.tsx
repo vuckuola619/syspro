@@ -72,10 +72,11 @@ export default function LiveMonitorPage() {
   async function fetchStats() {
     try {
       const data = await invoke<LiveStats>("get_live_stats")
+      if (!data) return
       setStats(data)
       
-      setCpuHistory(prev => [...prev.slice(-(MAX_HISTORY - 1)), data.cpu_usage])
-      setRamHistory(prev => [...prev.slice(-(MAX_HISTORY - 1)), data.ram_usage])
+      setCpuHistory(prev => [...prev.slice(-(MAX_HISTORY - 1)), data.cpu_usage ?? 0])
+      setRamHistory(prev => [...prev.slice(-(MAX_HISTORY - 1)), data.ram_usage ?? 0])
       
       // Calculate network delta
       if (prevNetRef.current) {
@@ -114,7 +115,7 @@ export default function LiveMonitorPage() {
                 <CardTitle className="text-sm font-medium">CPU Usage</CardTitle>
               </div>
               <span className="text-2xl font-bold tabular-nums" style={{color: (stats?.cpu_usage ?? 0) > 80 ? '#ef4444' : '#3b82f6'}}>
-                {stats?.cpu_usage.toFixed(1) ?? "0.0"}%
+                {(stats?.cpu_usage ?? 0).toFixed(1)}%
               </span>
             </div>
           </CardHeader>
@@ -134,7 +135,7 @@ export default function LiveMonitorPage() {
               </div>
               <div className="text-right">
                 <span className="text-2xl font-bold tabular-nums" style={{color: (stats?.ram_usage ?? 0) > 85 ? '#ef4444' : '#8b5cf6'}}>
-                  {stats?.ram_usage.toFixed(1) ?? "0.0"}%
+                  {(stats?.ram_usage ?? 0).toFixed(1)}%
                 </span>
                 <p className="text-xs text-muted-foreground">{stats?.ram_used_gb ?? 0} / {stats?.ram_total_gb ?? 0} GB</p>
               </div>

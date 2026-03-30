@@ -40,8 +40,9 @@ export default function BrowserExtensionsPage() {
     setIsScanning(true)
     try {
       const data = await invoke<BrowserExtension[]>("scan_browser_extensions")
-      setExtensions(data)
-      toast.success(`Found ${data.length} browser extensions`)
+      const safeData = Array.isArray(data) ? data : []
+      setExtensions(safeData)
+      toast.success(`Found ${safeData.length} browser extensions`)
     } catch (e) {
       toast.error(String(e))
     } finally {

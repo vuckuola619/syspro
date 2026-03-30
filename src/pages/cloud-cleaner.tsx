@@ -34,10 +34,11 @@ export default function CloudCleanerPage() {
     setIsLoading(true)
     try {
       const data = await invoke<CloudCacheEntry[]>("scan_cloud_caches")
-      setCaches(data)
-      const total = data.reduce((s, c) => s + c.size_bytes, 0)
+      const safeData = Array.isArray(data) ? data : []
+      setCaches(safeData)
+      const total = safeData.reduce((s, c) => s + (c.size_bytes ?? 0), 0)
       const display = total >= 1048576 ? `${(total / 1048576).toFixed(1)} MB` : `${(total / 1024).toFixed(1)} KB`
-      toast.success(`Found ${data.length} cache(s) — ${display} total`)
+      toast.success(`Found ${safeData.length} cache(s) — ${display} total`)
     } catch (e) { toast.error(String(e)) }
     finally { setIsLoading(false) }
   }

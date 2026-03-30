@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { CopyMinus, Search, RefreshCw, Trash2, FolderSearch } from "lucide-react"
-import { useState } from "react"
+import { useState, useRef } from "react"
+import { useVirtualizer } from "@tanstack/react-virtual"
 import { invoke } from "@tauri-apps/api/core"
 import { toast } from "sonner"
 import { open } from "@tauri-apps/plugin-dialog"
@@ -17,9 +18,17 @@ interface DuplicateGroup {
 
 export default function DuplicateFinderPage() {
   const [isScanning, setIsScanning] = useState(false)
-  const [hasScanned, setHasScanned] = useState(false)
   const [scanProgress, setScanProgress] = useState(0)
   const [groups, setGroups] = useState<DuplicateGroup[]>([])
+  const [hasScanned, setHasScanned] = useState(false)
+
+  const parentRef = useRef<HTMLDivElement>(null)
+  const rowVirtualizer = useVirtualizer({
+    count: groups.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: (index) => 58 + (groups[index]?.files?.length ?? 0) * 41 + 16,
+    overscan: 2,
+  })
 
   async function startScan() {
     try {
@@ -43,7 +52,8 @@ export default function DuplicateFinderPage() {
       clearInterval(interval)
       setScanProgress(100)
       
-      setGroups(result.map(g => ({ ...g, keep_index: 0 })))
+      const safeResult = Array.isArray(result) ? result : []
+      setGroups(safeResult.map(g => ({ ...g, files: Array.isArray(g?.files) ? g.files : [], keep_index: 0 })))
       setHasScanned(true)
       
     } catch (e) {
@@ -66,8 +76,8 @@ export default function DuplicateFinderPage() {
     }
   }
 
-  const totalSavings = groups.reduce((s, g) => s + g.size_mb * (g.files.length - 1), 0)
-  const totalDuplicates = groups.reduce((s, g) => s + g.files.length - 1, 0)
+  const totalSavings = groups.reduce((s, g) => s + (g.size_mb ?? 0) * ((g.files?.length ?? 1) - 1), 0)
+  const totalDuplicates = groups.reduce((s, g) => s + (g.files?.length ?? 1) - 1, 0)
 
   return (
     <div className="space-y-6">
@@ -115,33 +125,63 @@ export default function DuplicateFinderPage() {
         </CardContent>
       </Card>
 
-      {hasScanned && groups.map((group, gi) => (
-        <Card key={group.hash}>
-          <CardContent className="p-0">
-            <div className="px-4 py-3 border-b flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-medium">Group {gi + 1}</h3>
-                <Badge variant="secondary">{group.files.length} files · {group.size_mb} MB each</Badge>
-              </div>
-              <Button size="sm" variant="outline" onClick={() => removeGroupDuplicates(gi)} className="gap-1.5 text-red-600 hover:text-red-700 dark:text-red-300 hover:bg-red-50 dark:bg-red-500/10">
-                <Trash2 className="h-3 w-3" /> Remove Duplicates
-              </Button>
-            </div>
-            <div className="divide-y">
-              {group.files.map((file, fi) => (
-                <div key={fi} className="flex items-center px-4 py-2.5">
-                  <span className="text-sm truncate flex-1">{file}</span>
-                  {fi === group.keep_index ? (
-                    <Badge variant="secondary" className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[10px]">Keep</Badge>
-                  ) : (
-                    <Badge variant="secondary" className="bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 text-[10px]">Duplicate</Badge>
-                  )}
+      {hasScanned && (
+        <div ref={parentRef} className="h-[600px] overflow-auto rounded-md border p-2 bg-background space-y-0">
+          <div
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+              width: "100%",
+              position: "relative",
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const gi = virtualRow.index
+              const group = groups[gi]
+              return (
+                <div
+                  key={virtualRow.key}
+                  ref={rowVirtualizer.measureElement}
+                  data-index={virtualRow.index}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${virtualRow.start}px)`,
+                    paddingBottom: "16px",
+                  }}
+                >
+                  <Card>
+                    <CardContent className="p-0">
+                      <div className="px-4 py-3 border-b flex items-center justify-between bg-muted/30">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-medium">Group {gi + 1}</h3>
+                          <Badge variant="secondary">{group.files.length} files · {group.size_mb} MB each</Badge>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => removeGroupDuplicates(gi)} className="gap-1.5 text-red-600 hover:text-red-700 dark:text-red-300 hover:bg-red-50 dark:bg-red-500/10">
+                          <Trash2 className="h-3 w-3" /> Remove Duplicates
+                        </Button>
+                      </div>
+                      <div className="divide-y">
+                        {group.files.map((file, fi) => (
+                          <div key={fi} className="flex items-center px-4 py-2.5">
+                            <span className="text-sm truncate flex-1" title={file}>{file}</span>
+                            {fi === group.keep_index ? (
+                              <Badge className="bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] ml-2 shrink-0">Keep</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 text-[10px] ml-2 shrink-0">Duplicate</Badge>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

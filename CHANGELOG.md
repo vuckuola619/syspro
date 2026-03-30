@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] — 2026-03-30 (Stability Patch)
+
+### 🛡 Stability Hardening
+
+Comprehensive audit and hardening of **all 44 pages** to eliminate runtime crashes from malformed or missing backend responses.
+
+| Category | Pages Fixed | Pattern Applied |
+|:---|:---|:---|
+| **Array.isArray guards** | 15 pages | All `invoke<T[]>()` results guarded before `.map()` / `.filter()` / `.reduce()` |
+| **Null-coalescing** | 12 pages | All `.toFixed()` calls protected with `?? 0` fallback |
+| **charAt safety** | 2 pages | `username.charAt()` guarded with `?? "?"` fallback |
+| **Nested array guards** | 3 pages | `categories.map()`, `domains.map()`, `permissions.map()` — nested arrays guarded |
+
+### 🐛 Bug Fixes
+
+| Fix | Description |
+|:---|:---|
+| **Password Generator crash** | Frontend was sending `useUppercase`/`useLowercase` but Rust expects `uppercase`/`lowercase` — argument names corrected |
+| **Multi-User "Cannot read charAt"** | `p.username` could be `undefined` — added `?? "?"` fallback before `.charAt(0)` |
+| **Sidebar cleanup** | Removed redundant "One-Click Optimize" button (functionality merged into Dashboard) |
+| **Dashboard context TypeScript** | Fixed `Record<string, unknown>` property access using bracket notation |
+
+### ⚡ Performance
+
+| Optimization | Description |
+|:---|:---|
+| **Batch timeout** | Added `tokio::time::timeout(30s)` to `batch_invoke` dispatcher to prevent long-running PowerShell from blocking UI |
+
+### 📦 Release Assets
+
+| File | Description |
+|:---|:---|
+| `SABI_1.3.0_x64-setup.exe` | NSIS installer (recommended) |
+| `SABI_1.3.0_x64_en-US.msi` | MSI installer for enterprise/GPO |
+
+---
+
 ## [1.3.0] — 2026-03-26
 
 ### 🔀 Module Merges

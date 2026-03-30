@@ -39,8 +39,9 @@ export default function CpuSaverPage() {
     setIsLoading(true)
     try {
       const data = await invoke<ProcessPriorityInfo[]>("get_process_priorities")
-      setProcesses(data)
-      toast.success(`Loaded ${data.length} processes`)
+      const safeData = Array.isArray(data) ? data : []
+      setProcesses(safeData)
+      toast.success(`Loaded ${safeData.length} processes`)
     } catch (e) {
       toast.error(String(e))
     } finally {
@@ -198,12 +199,12 @@ export default function CpuSaverPage() {
                     <p className="text-xs font-semibold" style={{
                       color: proc.cpu_usage > 20 ? "#ef4444" : proc.cpu_usage > 5 ? "#f59e0b" : "#22c55e"
                     }}>
-                      {proc.cpu_usage.toFixed(1)}%
+                      {(proc.cpu_usage ?? 0).toFixed(1)}%
                     </p>
                     <p className="text-[10px] text-muted-foreground">CPU</p>
                   </div>
                   <div className="text-right shrink-0 w-20">
-                    <p className="text-xs font-semibold">{proc.memory_mb.toFixed(0)} MB</p>
+                    <p className="text-xs font-semibold">{(proc.memory_mb ?? 0).toFixed(0)} MB</p>
                     <p className="text-[10px] text-muted-foreground">RAM</p>
                   </div>
                   <select

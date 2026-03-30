@@ -32,7 +32,7 @@ export default function InternetBoosterPage() {
     setIsTesting(true)
     try {
       const data = await invoke<DnsResult[]>("test_dns_servers")
-      setResults(data)
+      setResults(Array.isArray(data) ? data : [])
       // Refresh current DNS info
       invoke<string>("get_current_dns").then(setCurrentDns).catch(() => {})
     } catch (e) { toast.error(String(e)) }

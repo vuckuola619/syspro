@@ -23,14 +23,15 @@ export default function MultiUserPage() {
     setIsLoading(true)
     try {
       const data = await invoke<UserProfile[]>("get_user_profiles")
-      setProfiles(data)
-      toast.success(`Found ${data.length} user profile(s)`)
+      const safeData = Array.isArray(data) ? data : []
+      setProfiles(safeData)
+      toast.success(`Found ${safeData.length} user profile(s)`)
     } catch (e) { toast.error(String(e)) }
     finally { setIsLoading(false) }
   }
 
   const activeCount = profiles.filter(p => p.is_active).length
-  const totalSize = profiles.reduce((s, p) => s + p.size_bytes, 0)
+  const totalSize = profiles.reduce((s, p) => s + (p.size_bytes ?? 0), 0)
   const totalDisplay = totalSize >= 1073741824 ? `${(totalSize / 1073741824).toFixed(1)} GB` :
     totalSize >= 1048576 ? `${(totalSize / 1048576).toFixed(1)} MB` : `${(totalSize / 1024).toFixed(1)} KB`
 
@@ -85,7 +86,7 @@ export default function MultiUserPage() {
             <Card key={p.sid} className={p.is_active ? "border-green-200 dark:border-green-500/20" : ""}>
               <CardContent className="p-4 flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white font-bold text-lg">
-                  {p.username.charAt(0).toUpperCase()}
+                  {(p.username ?? "?").charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">

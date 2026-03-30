@@ -66,16 +66,16 @@ export default function DashboardPage() {
 
   const registryIssues = registryIssuesList.length
 
-  // Computed values
-  const ramPercent = overview ? overview.ram_usage_percent : 0
-  const totalJunkMb = junkResult ? junkResult.categories.reduce((s, c) => s + c.size_mb, 0) : health.junk_files_mb
-  const totalJunkFiles = junkResult ? junkResult.categories.reduce((s, c) => s + c.files_count, 0) : 0
-  const totalPrivacy = privacyResult ? privacyResult.categories.reduce((s, c) => s + c.items_count, 0) : health.privacy_traces
+  // Computed values — all ?? 0 to guard against undefined fields from Rust
+  const ramPercent = overview ? (overview.ram_usage_percent ?? 0) : 0
+  const totalJunkMb = junkResult ? junkResult.categories.reduce((s, c) => s + (c.size_mb ?? 0), 0) : (health.junk_files_mb ?? 0)
+  const totalJunkFiles = junkResult ? junkResult.categories.reduce((s, c) => s + (c.files_count ?? 0), 0) : 0
+  const totalPrivacy = privacyResult ? privacyResult.categories.reduce((s, c) => s + (c.items_count ?? 0), 0) : (health.privacy_traces ?? 0)
   const enabledStartup = startupItems.filter(s => s.enabled).length
-  const totalDiskGb = overview?.disks?.reduce((s, d) => s + d.total_gb, 0) || 0
-  const usedDiskGb = overview?.disks?.reduce((s, d) => s + d.used_gb, 0) || 0
-  const totalNetBytes = networkSpeeds.reduce((s, n) => s + n.bytes_received + n.bytes_sent, 0)
-  const finalScore = optScore ? optScore.overall_score : health.overall
+  const totalDiskGb = overview?.disks?.reduce((s, d) => s + (d.total_gb ?? 0), 0) || 0
+  const usedDiskGb = overview?.disks?.reduce((s, d) => s + (d.used_gb ?? 0), 0) || 0
+  const totalNetBytes = networkSpeeds.reduce((s, n) => s + (n.bytes_received ?? 0) + (n.bytes_sent ?? 0), 0)
+  const finalScore = optScore ? (optScore.overall_score ?? 0) : (health.overall ?? 0)
 
   return (
     <div className="space-y-6">
@@ -214,7 +214,7 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Usage</span>
-                  <span className="font-medium">{overview?.cpu_usage.toFixed(1) || 0}%</span>
+                  <span className="font-medium">{(overview?.cpu_usage ?? 0).toFixed(1)}%</span>
                 </div>
                 <Progress value={overview?.cpu_usage || 0} indicatorClassName={(overview?.cpu_usage || 0) > 80 ? "bg-red-500" : "bg-blue-500"} />
               </div>
@@ -229,7 +229,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <CardTitle className="text-sm font-medium">Memory</CardTitle>
-                  <CardDescription className="text-xs">{overview ? `${overview.ram_used_gb.toFixed(1)} / ${overview.ram_total_gb.toFixed(1)} GB` : "N/A"}</CardDescription>
+                  <CardDescription className="text-xs">{overview ? `${(overview.ram_used_gb ?? 0).toFixed(1)} / ${(overview.ram_total_gb ?? 0).toFixed(1)} GB` : "N/A"}</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -262,7 +262,7 @@ export default function DashboardPage() {
                   <div key={i} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">{disk.mount_point} ({disk.fs_type})</span>
-                      <span className="font-medium">{disk.free_gb.toFixed(1)} GB free</span>
+                      <span className="font-medium">{(disk.free_gb ?? 0).toFixed(1)} GB free</span>
                     </div>
                     <Progress value={disk.usage_percent} className="h-2 bg-secondary" indicatorClassName={disk.usage_percent > 90 ? "bg-red-500" : "bg-emerald-500"} />
                   </div>
@@ -350,24 +350,24 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="p-4 space-y-2">
               <p className="text-sm font-medium mb-3">Category Breakdown</p>
-              {optScore.categories.map(cat => (
+              {Array.isArray(optScore.categories) && optScore.categories.map(cat => (
                 <div key={cat.name} className="flex items-center gap-3 p-2 rounded-lg bg-muted/20">
                   <span className="text-sm font-medium w-24">{cat.name}</span>
                   <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all"
                       style={{
-                        width: `${(cat.score / cat.max_score) * 100}%`,
-                        backgroundColor: cat.score >= cat.max_score * 0.75 ? "#22c55e" : cat.score >= cat.max_score * 0.5 ? "#eab308" : "#ef4444",
+                        width: `${((cat.score ?? 0) / (cat.max_score || 1)) * 100}%`,
+                        backgroundColor: (cat.score ?? 0) >= (cat.max_score ?? 0) * 0.75 ? "#22c55e" : (cat.score ?? 0) >= (cat.max_score ?? 0) * 0.5 ? "#eab308" : "#ef4444",
                       }} />
                   </div>
-                  <span className="text-xs font-mono w-12 text-right">{cat.score}/{cat.max_score}</span>
+                  <span className="text-xs font-mono w-12 text-right">{cat.score ?? 0}/{cat.max_score ?? 0}</span>
                   <span className="text-xs text-muted-foreground w-28 text-right">{cat.status}</span>
                 </div>
               ))}
             </CardContent>
           </Card>
 
-          {optScore.recommendations.length > 0 && (
+          {Array.isArray(optScore.recommendations) && optScore.recommendations.length > 0 && (
             <Card>
               <CardContent className="p-4 space-y-2">
                 <p className="text-sm font-medium mb-3">Recommendations</p>
@@ -393,7 +393,7 @@ export default function DashboardPage() {
             </Card>
           )}
 
-          {optScore.recommendations.length === 0 && (
+          {(!Array.isArray(optScore.recommendations) || optScore.recommendations.length === 0) && (
             <Card className="border-green-200 dark:border-green-500/20">
               <CardContent className="p-4 flex items-center gap-3">
                 <CheckCircle className="h-5 w-5 text-green-500" />
@@ -405,12 +405,12 @@ export default function DashboardPage() {
           <AIAnalysis
             title="AI Remediation Suggestions"
             context={[
-              overview ? `System: ${overview.cpu_name}, RAM: ${overview.ram_used_gb.toFixed(1)}/${overview.ram_total_gb.toFixed(1)} GB, CPU: ${overview.cpu_usage.toFixed(1)}%` : "",
-              optScore ? `Optimization Score: ${optScore.overall_score}/100 (Grade ${optScore.grade})` : "",
-              optScore ? `Categories: ${optScore.categories.map(c => `${c.name}: ${c.score}/${c.max_score} (${c.status})`).join(", ")}` : "",
-              optScore?.recommendations?.length ? `Issues found: ${optScore.recommendations.map(r => `[${r.impact}] ${r.title}: ${r.description}`).join("; ")}` : "",
-              health ? `Health Score: ${health.overall}/100` : "",
-              junkResult ? `Junk Files: ${junkResult.categories.reduce((s, c) => s + c.size_mb, 0).toFixed(1)} MB` : "",
+              overview ? `System: ${overview.cpu_name}, RAM: ${(overview.ram_used_gb ?? 0).toFixed(1)}/${(overview.ram_total_gb ?? 0).toFixed(1)} GB, CPU: ${(overview.cpu_usage ?? 0).toFixed(1)}%` : "",
+              optScore ? `Optimization Score: ${optScore.overall_score ?? 0}/100 (Grade ${optScore.grade})` : "",
+              optScore && Array.isArray(optScore.categories) ? `Categories: ${optScore.categories.map(c => `${c.name}: ${c.score ?? 0}/${c.max_score ?? 0} (${c.status})`).join(", ")}` : "",
+              optScore && Array.isArray(optScore.recommendations) && optScore.recommendations.length ? `Issues found: ${optScore.recommendations.map(r => `[${r.impact}] ${r.title}: ${r.description}`).join("; ")}` : "",
+              health ? `Health Score: ${health.overall ?? 0}/100` : "",
+              junkResult && Array.isArray(junkResult.categories) ? `Junk Files: ${junkResult.categories.reduce((s, c) => s + (c.size_mb ?? 0), 0).toFixed(1)} MB` : "",
               registryIssues > 0 ? `Registry Issues: ${registryIssues}` : "",
             ].filter(Boolean).join("\n")}
             prompt="Based on these system scan results, what are the top remediation steps I should take? Prioritize by impact. Include specific steps for each suggestion."

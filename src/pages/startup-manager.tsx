@@ -28,7 +28,7 @@ export default function StartupManagerPage() {
     setIsLoading(true)
     try {
       const data = await invoke<StartupItem[]>("get_startup_items")
-      setItems(data)
+      setItems(Array.isArray(data) ? data : [])
     } catch (e) {
       toast.error("Failed to load startup items:")
       // Fallback demo data

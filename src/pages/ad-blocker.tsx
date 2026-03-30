@@ -34,8 +34,10 @@ export default function AdBlockerPage() {
     setIsLoading(true)
     try {
       const data = await invoke<HostsBlockStatus>("get_hosts_block_status")
-      setStatus(data)
-      toast.success(data.is_active ? `Blocking ${data.total_blocked} domains` : "Ad blocker is inactive")
+      if (data) {
+        setStatus({ ...data, categories: Array.isArray(data.categories) ? data.categories : [] })
+        toast.success(data.is_active ? `Blocking ${data.total_blocked ?? 0} domains` : "Ad blocker is inactive")
+      }
     } catch (e) {
       toast.error(String(e))
     } finally {
@@ -125,7 +127,7 @@ export default function AdBlockerPage() {
             </div>
 
             {/* Categories */}
-            {status.categories.length > 0 && (
+            {Array.isArray(status.categories) && status.categories.length > 0 && (
               <div className="space-y-1 mt-3">
                 {status.categories.map(cat => (
                   <div key={cat.name} className="rounded-lg border">
@@ -143,7 +145,7 @@ export default function AdBlockerPage() {
                     {expandedCat === cat.name && (
                       <div className="border-t px-3 py-2 bg-muted/10">
                         <div className="flex flex-wrap gap-1">
-                          {cat.domains.map(d => (
+                          {Array.isArray(cat.domains) && cat.domains.map(d => (
                             <span key={d} className="px-2 py-0.5 rounded text-[10px] bg-muted/50 text-muted-foreground font-mono">{d}</span>
                           ))}
                         </div>

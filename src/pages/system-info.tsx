@@ -179,7 +179,7 @@ export default function SystemInfoPage() {
                   { label: "Threads", value: String(details.cpu.threads) },
                   { label: "Base Frequency", value: `${details.cpu.frequency_mhz} MHz` },
                   { label: "Architecture", value: details.cpu.architecture },
-                  { label: "Current Usage", value: `${details.cpu.usage.toFixed(1)}%` },
+                  { label: "Current Usage", value: `${(details.cpu.usage ?? 0).toFixed(1)}%` },
                 ]}
               />
             </CardContent>
@@ -199,12 +199,12 @@ export default function SystemInfoPage() {
             <CardContent>
               <InfoGrid
                 items={[
-                  { label: "Total RAM", value: `${details.memory.total_gb.toFixed(1)} GB` },
-                  { label: "Used", value: `${details.memory.used_gb.toFixed(1)} GB` },
-                  { label: "Available", value: `${details.memory.available_gb.toFixed(1)} GB` },
-                  { label: "Usage", value: `${details.memory.usage_percent.toFixed(1)}%` },
-                  { label: "Swap Total", value: `${details.memory.swap_total_gb.toFixed(1)} GB` },
-                  { label: "Swap Used", value: `${details.memory.swap_used_gb.toFixed(1)} GB` },
+                  { label: "Total RAM", value: `${(details.memory.total_gb ?? 0).toFixed(1)} GB` },
+                  { label: "Used", value: `${(details.memory.used_gb ?? 0).toFixed(1)} GB` },
+                  { label: "Available", value: `${(details.memory.available_gb ?? 0).toFixed(1)} GB` },
+                  { label: "Usage", value: `${(details.memory.usage_percent ?? 0).toFixed(1)}%` },
+                  { label: "Swap Total", value: `${(details.memory.swap_total_gb ?? 0).toFixed(1)} GB` },
+                  { label: "Swap Used", value: `${(details.memory.swap_used_gb ?? 0).toFixed(1)} GB` },
                 ]}
               />
             </CardContent>
@@ -213,7 +213,7 @@ export default function SystemInfoPage() {
 
         <TabsContent value="storage">
           <div className="space-y-4">
-            {details.disks.map((disk, i) => (
+            {Array.isArray(details.disks) && details.disks.map((disk, i) => (
               <Card key={i}>
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
@@ -225,17 +225,17 @@ export default function SystemInfoPage() {
                         {disk.mount_point} {disk.name && `(${disk.name})`}
                       </CardTitle>
                     </div>
-                    <Badge variant={disk.usage_percent > 90 ? "destructive" : "secondary"}>
-                      {disk.usage_percent.toFixed(0)}% used
+                    <Badge variant={(disk.usage_percent ?? 0) > 90 ? "destructive" : "secondary"}>
+                      {(disk.usage_percent ?? 0).toFixed(0)}% used
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <InfoGrid
                     items={[
-                      { label: "Total", value: `${disk.total_gb.toFixed(1)} GB` },
-                      { label: "Used", value: `${disk.used_gb.toFixed(1)} GB` },
-                      { label: "Free", value: `${disk.free_gb.toFixed(1)} GB` },
+                      { label: "Total", value: `${(disk.total_gb ?? 0).toFixed(1)} GB` },
+                      { label: "Used", value: `${(disk.used_gb ?? 0).toFixed(1)} GB` },
+                      { label: "Free", value: `${(disk.free_gb ?? 0).toFixed(1)} GB` },
                       { label: "File System", value: disk.fs_type },
                       { label: "Type", value: disk.disk_type },
                     ]}
@@ -280,7 +280,7 @@ export default function SystemInfoPage() {
 
         <TabsContent value="network">
           <div className="space-y-4">
-            {details.network.length > 0 ? (
+            {Array.isArray(details.network) && details.network.length > 0 ? (
               details.network.map((net, i) => (
                 <Card key={i}>
                   <CardHeader className="pb-3">

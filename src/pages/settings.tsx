@@ -16,6 +16,13 @@ interface AppUpdateInfo {
   release_notes: string; download_url: string
 }
 
+interface WebhookConfig {
+  url: string;
+  format: string;
+  enabled: boolean;
+  headers: Record<string, string>;
+}
+
 export default function SettingsPage() {
   const { mode, setMode, backgroundImage, setBackgroundImage, backgroundOpacity, setBackgroundOpacity, accentColor, setAccentColor } = useTheme()
   const { locale, setLocale, t, availableLocales } = useI18n()
@@ -27,8 +34,12 @@ export default function SettingsPage() {
   const [showApiKey, setShowApiKey] = useState(false)
   const [testingApi, setTestingApi] = useState(false)
 
+  const [webhookConfig, setWebhookConfig] = useState<WebhookConfig>({ url: "", format: "json", enabled: false, headers: {} })
+  const [testingWebhook, setTestingWebhook] = useState(false)
+
   useEffect(() => {
     getVersion().then(v => setAppVersion(v)).catch(() => setAppVersion("1.1.1"))
+    invoke<WebhookConfig>("get_webhook_config").then(cfg => setWebhookConfig(cfg)).catch(() => {})
   }, [])
 
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -45,6 +56,28 @@ export default function SettingsPage() {
     try { setUpdateInfo(await invoke<AppUpdateInfo>("check_for_app_update")) }
     catch { }
     finally { setChecking(false) }
+  }
+
+  async function saveWebhook(cfg: WebhookConfig) {
+    try {
+      await invoke("save_webhook_config", { config: cfg })
+      setWebhookConfig(cfg)
+      toast.success("Webhook settings saved")
+    } catch (e) {
+      toast.error(`Failed to save: ${e}`)
+    }
+  }
+
+  async function testWebhook() {
+    setTestingWebhook(true)
+    try {
+      const msg = await invoke<string>("test_webhook")
+      toast.success(msg)
+    } catch (e) {
+      toast.error(`Test failed: ${e}`)
+    } finally {
+      setTestingWebhook(false)
+    }
   }
 
   const accentColorMap: Record<string, string> = {
@@ -403,6 +436,80 @@ export default function SettingsPage() {
                 <div className="text-amber-800 dark:text-amber-300 space-y-1">
                   <p className="font-medium">Privacy Notice</p>
                   <p>When enabled, AI features send system info and questions to an external API ({aiSettings.provider === "gemini" ? "Google" : "OpenAI"}). Your API key is stored locally only and is never shared.</p>
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Integrations ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Globe className="h-4 w-4 text-primary" /> Integrations
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">SIEM Webhook</p>
+              <p className="text-xs text-muted-foreground">Send audit events to Wazuh, Splunk, etc.</p>
+            </div>
+            <Switch
+              checked={webhookConfig.enabled}
+              onCheckedChange={v => {
+                const updated = { ...webhookConfig, enabled: v }
+                setWebhookConfig(updated)
+                saveWebhook(updated)
+              }}
+            />
+          </div>
+
+          {webhookConfig.enabled && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Webhook URL</label>
+                  <input
+                    type="url"
+                    className="w-full rounded-md border bg-muted/50 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="https://siem.lan/api/webhook"
+                    value={webhookConfig.url}
+                    onChange={e => setWebhookConfig({ ...webhookConfig, url: e.target.value })}
+                    onBlur={() => saveWebhook({ ...webhookConfig })}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Payload Format</label>
+                    <select
+                      className="w-full rounded-md border bg-muted/50 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      value={webhookConfig.format}
+                      onChange={e => {
+                        const updated = { ...webhookConfig, format: e.target.value }
+                        setWebhookConfig(updated)
+                        saveWebhook(updated)
+                      }}
+                    >
+                      <option value="json">JSON</option>
+                      <option value="cef">CEF (ArcSight/Splunk)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Action</label>
+                    <Button
+                      variant="outline"
+                      className="w-full h-[34px] gap-1.5"
+                      size="sm"
+                      disabled={!webhookConfig.url || testingWebhook}
+                      onClick={testWebhook}
+                    >
+                      {testingWebhook ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                      Test Connection
+                    </Button>
+                  </div>
                 </div>
               </div>
             </>

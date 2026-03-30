@@ -14,7 +14,7 @@
 
 <p align="center">
   A lightweight, high-performance <strong>PC Optimizer & System Toolkit</strong> for Windows.<br/>
-  Built with Rust and React to deliver native speed, modern UI, and 44+ system tools<br/>
+  Built with Rust and React to deliver native speed, modern UI, and 44 system tools<br/>
   in a single ~3 MB application — no Electron, no bloat, no telemetry.
 </p>
 
@@ -68,7 +68,6 @@
 
 ### 📊 Overview
 - **Dashboard** — System health overview with key metrics + Smart Analyze (health grade, category breakdown, recommendations)
-- **One-Click Optimize** — Run all cleaners + optimizers in a single click
 - **AI Analysis** — Opt-in inline AI remediation on scan results (Gemini/OpenAI) with severity-coded suggestions
 
 </td><td>
@@ -247,7 +246,8 @@ AG-SysPro/
 │   └── App.tsx                   # Router + lazy-loaded pages
 ├── src-tauri/
 │   ├── src/
-│   │   └── lib.rs                # 6780+ line Rust backend (all commands)
+│   │   └── lib.rs                # Rust backend (all IPC commands)
+│   │   └── modules/              # Modular backend (batch, system, etc.)
 │   ├── capabilities/
 │   │   └── default.json          # Tauri v2 permission grants
 │   ├── icons/                    # App icons

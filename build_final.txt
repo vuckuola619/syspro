@@ -1,0 +1,321 @@
+
+> sabi@1.3.0 tauri
+> tauri build
+
+        Info Looking up installed tauri packages to check mismatched versions...
+        Warn The bundle identifier "com.sabi.app" set in `"tauri.conf.json" identifier` ends with `.app`. This is not recommended because it conflicts with the application bundle extension on macOS.
+     Running beforeBuildCommand `npm run build`
+
+> sabi@1.3.0 build
+> tsc && vite build
+
+[36mvite v8.0.0 [32mbuilding client environment for production...[36m[39m
+[2K
+transforming...Γ£ô 1952 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 3.13 kB Γöé gzip:   1.28 kB
+dist/assets/index-48Sc_9YF.css                 53.01 kB Γöé gzip:   9.57 kB
+dist/assets/check-BYPlnYCE.js                   0.11 kB Γöé gzip:   0.13 kB
+dist/assets/plus-D1AW7f7u.js                    0.14 kB Γöé gzip:   0.14 kB
+dist/assets/clock-ek-RZGSa.js                   0.15 kB Γöé gzip:   0.15 kB
+dist/assets/circle-check-Ct_Hpi8s.js            0.16 kB Γöé gzip:   0.15 kB
+dist/assets/circle-check-big-BCwHViVV.js        0.18 kB Γöé gzip:   0.17 kB
+dist/assets/rotate-ccw-Lc5dN1F1.js              0.18 kB Γöé gzip:   0.17 kB
+dist/assets/dist-js-c8r_IkaR.js                 0.20 kB Γöé gzip:   0.17 kB
+dist/assets/folder--NutvVie.js                  0.21 kB Γöé gzip:   0.18 kB
+dist/assets/square-check-big-BynciHFB.js        0.21 kB Γöé gzip:   0.18 kB
+dist/assets/upload-ngXsQUCc.js                  0.21 kB Γöé gzip:   0.18 kB
+dist/assets/eye-DYvdS7Nv.js                     0.24 kB Γöé gzip:   0.19 kB
+dist/assets/triangle-alert-C9HPbMNY.js          0.25 kB Γöé gzip:   0.20 kB
+dist/assets/arrow-up-BKqNkAj9.js                0.26 kB Γöé gzip:   0.19 kB
+dist/assets/dist-js-Bo0tA0TD.js                 0.26 kB Γöé gzip:   0.17 kB
+dist/assets/folder-open-BhKQPj_y.js             0.28 kB Γöé gzip:   0.21 kB
+dist/assets/folder-search-DvqRt0_2.js           0.30 kB Γöé gzip:   0.23 kB
+dist/assets/shield-check-zOwVFMll.js            0.30 kB Γöé gzip:   0.23 kB
+dist/assets/toggle-right-C4QlUZUa.js            0.33 kB Γöé gzip:   0.21 kB
+dist/assets/shield-alert-t_jtAcGp.js            0.34 kB Γöé gzip:   0.25 kB
+dist/assets/dist-BCP9fqit.js                    0.41 kB Γöé gzip:   0.27 kB
+dist/assets/memory-stick-BttTMdgr.js            0.52 kB Γöé gzip:   0.26 kB
+dist/assets/image-DZp78GhA.js                   0.60 kB Γöé gzip:   0.31 kB
+dist/assets/input-70ralHfQ.js                   0.62 kB Γöé gzip:   0.38 kB
+dist/assets/dist-M1Q-Pjw9.js                    0.73 kB Γöé gzip:   0.42 kB
+dist/assets/badge-CsPQMRwv.js                   0.80 kB Γöé gzip:   0.42 kB
+dist/assets/core-Cu6tPGgA.js                    1.02 kB Γöé gzip:   0.50 kB
+dist/assets/preload-helper-D4M6sveU.js          1.19 kB Γöé gzip:   0.68 kB
+dist/assets/dist-CeBYHuRE.js                    1.66 kB Γöé gzip:   0.71 kB
+dist/assets/ai-context-rappExih.js              1.98 kB Γöé gzip:   1.01 kB
+dist/assets/edge-manager-DL2Luhwk.js            2.31 kB Γöé gzip:   1.01 kB
+dist/assets/privacy-hardening-Ca7fZMTs.js       2.62 kB Γöé gzip:   1.07 kB
+dist/assets/switch-EZOu3BLN.js                  2.63 kB Γöé gzip:   1.28 kB
+dist/assets/windows-tweaks-Bma-S59e.js          2.66 kB Γöé gzip:   1.10 kB
+dist/assets/network-monitor-D-pQN4jf.js         2.76 kB Γöé gzip:   1.09 kB
+dist/assets/button-CtosaOOr.js                  2.93 kB Γöé gzip:   1.29 kB
+dist/assets/popup-blocker-BNW6iX4b.js           2.95 kB Γöé gzip:   1.16 kB
+dist/assets/progress-BGgTBEDi.js                3.40 kB Γöé gzip:   1.59 kB
+dist/assets/disk-defrag-B-t_bHGL.js             3.45 kB Γöé gzip:   1.22 kB
+dist/assets/dist-BB4G9FGJ.js                    3.46 kB Γöé gzip:   1.50 kB
+dist/assets/password-generator-CLKErx4g.js      3.48 kB Γöé gzip:   1.41 kB
+dist/assets/cloud-cleaner-7Uk0GCyC.js           3.49 kB Γöé gzip:   1.40 kB
+dist/assets/react-dom-B0mxLzjk.js               3.54 kB Γöé gzip:   1.34 kB
+dist/assets/service-manager-CV0rc9p8.js         3.54 kB Γöé gzip:   1.40 kB
+dist/assets/registry-defrag-BgL7TAFo.js         3.55 kB Γöé gzip:   1.21 kB
+dist/assets/speed-monitor-DiPLeOsN.js           3.56 kB Γöé gzip:   1.21 kB
+dist/assets/file-shredder-De5P-6uK.js           3.60 kB Γöé gzip:   1.37 kB
+dist/assets/system-slimming-CQhyriS7.js         3.61 kB Γöé gzip:   1.36 kB
+dist/assets/update-manager-D7RVKJHj.js          3.79 kB Γöé gzip:   1.38 kB
+dist/assets/rollback-history-DHz9a8HW.js        3.89 kB Γöé gzip:   1.49 kB
+dist/assets/scheduled-clean-DrjtVaQD.js         3.95 kB Γöé gzip:   1.46 kB
+dist/assets/driver-updater-C5rNvPlN.js          3.99 kB Γöé gzip:   1.27 kB
+dist/assets/multi-user-BeSYOdlW.js              4.11 kB Γöé gzip:   1.31 kB
+dist/assets/disk-health-CnBgCleH.js             4.15 kB Γöé gzip:   1.48 kB
+dist/assets/firewall-manager-SCP29hpb.js        4.19 kB Γöé gzip:   1.57 kB
+dist/assets/startup-manager-BWCeGghn.js         4.33 kB Γöé gzip:   1.51 kB
+dist/assets/hosts-editor-Dt7vpy6O.js            4.36 kB Γöé gzip:   1.66 kB
+dist/assets/ai-assistant-C5P7InnA.js            4.53 kB Γöé gzip:   1.93 kB
+dist/assets/speed-test-D6wl8mF8.js              4.64 kB Γöé gzip:   1.50 kB
+dist/assets/restore-points-Cn1ngJ6N.js          4.82 kB Γöé gzip:   1.77 kB
+dist/assets/app-junk-B-Hu8dY_.js                4.92 kB Γöé gzip:   1.74 kB
+dist/assets/internet-booster-DqW5k8OJ.js        4.93 kB Γöé gzip:   1.51 kB
+dist/assets/export-report-CWyWdw9U.js           5.08 kB Γöé gzip:   2.16 kB
+dist/assets/duplicate-finder-CmQm1SGU.js        5.15 kB Γöé gzip:   1.88 kB
+dist/assets/file-splitter-C0a0jem-.js           5.25 kB Γöé gzip:   1.57 kB
+dist/assets/benchmarks-Bnm1_36U.js              5.29 kB Γöé gzip:   1.55 kB
+dist/assets/empty-folder-scanner-DrE8bq6d.js    5.37 kB Γöé gzip:   1.85 kB
+dist/assets/privacy-DWGQZgd9.js                 5.45 kB Γöé gzip:   1.63 kB
+dist/assets/dns-protector-8p2bNicg.js           5.52 kB Γöé gzip:   1.80 kB
+dist/assets/login-monitor-BKFGSYSv.js           5.63 kB Γöé gzip:   1.70 kB
+dist/assets/ad-blocker-DokaqsPy.js              5.64 kB Γöé gzip:   1.79 kB
+dist/assets/file-recovery-B5xHLqMM.js           5.80 kB Γöé gzip:   1.82 kB
+dist/assets/performance-BUTxlXun.js             5.95 kB Γöé gzip:   1.77 kB
+dist/assets/anti-spyware-DWGXGVWg.js            6.20 kB Γöé gzip:   1.74 kB
+dist/assets/app-uninstaller-DvyuEZqO.js         6.29 kB Γöé gzip:   2.00 kB
+dist/assets/registry-cleaner-BCI2sp1u.js        6.55 kB Γöé gzip:   2.08 kB
+dist/assets/browser-extensions-Ci3q11Ba.js      6.69 kB Γöé gzip:   2.02 kB
+dist/assets/software-updater-xDQ1o_fV.js        6.78 kB Γöé gzip:   2.16 kB
+dist/assets/junk-cleaner-tYbfcqOa.js            7.08 kB Γöé gzip:   2.08 kB
+dist/assets/windows-debloater-BlsX6oy9.js       7.40 kB Γöé gzip:   2.86 kB
+dist/assets/large-file-finder-BAyXA_UR.js       7.40 kB Γöé gzip:   2.66 kB
+dist/assets/disk-analyzer-D6qzmjia.js           7.56 kB Γöé gzip:   2.37 kB
+dist/assets/file-hider-D3MFh_EA.js              7.65 kB Γöé gzip:   2.50 kB
+dist/assets/live-monitor-BWyllMTX.js            8.25 kB Γöé gzip:   2.06 kB
+dist/assets/jsx-runtime-Bg_NI1en.js             8.52 kB Γöé gzip:   3.25 kB
+dist/assets/smart-clean-2TTa53Ud.js            10.08 kB Γöé gzip:   3.31 kB
+dist/assets/turbo-boost-D3Y_dCNb.js            12.36 kB Γöé gzip:   3.63 kB
+dist/assets/window-qjdVf6kc.js                 13.37 kB Γöé gzip:   3.23 kB
+dist/assets/system-info-FqYce2yw.js            15.39 kB Γöé gzip:   4.97 kB
+dist/assets/esm-Da3rTV0T.js                    15.91 kB Γöé gzip:   4.99 kB
+dist/assets/dashboard-DQiMMIz_.js              18.61 kB Γöé gzip:   4.68 kB
+dist/assets/settings-DkZfoRy-.js               20.54 kB Γöé gzip:   5.74 kB
+dist/assets/utils-BosD8C91.js                  27.63 kB Γöé gzip:   9.04 kB
+dist/assets/index-ycogxGrA.js                 399.60 kB Γöé gzip: 123.17 kB
+
+[PLUGIN_TIMINGS] Warning: Your build spent significant time in plugins. Here is a breakdown:
+  - rolldown:vite-resolve (35%)
+  - vite:build-html (14%)
+  - vite:css-post (14%)
+  - vite:css (13%)
+See https://rolldown.rs/options/checks#plugintimings for more details.
+
+[32mΓ£ô built in 4.75s[39m
+   Compiling sabi v1.3.0 (C:\Users\bati-\OneDrive\Documents\AG-SysPro\src-tauri)
+warning: unused import: `std::collections::HashMap`
+ --> src\modules\system.rs:4:5
+  |
+4 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `read_reg_dword` and `version_is_newer`
+  --> src\modules\system.rs:13:38
+   |
+13 | use crate::util::{hidden_powershell, read_reg_dword, version_is_newer};
+   |                                      ^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^
+
+warning: unused import: `sanitize_powershell_input`
+  --> src\modules\performance.rs:12:38
+   |
+12 | use crate::util::{hidden_powershell, sanitize_powershell_input, scan_directory_size};
+   |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::env`
+ --> src\modules\network.rs:2:5
+  |
+2 | use std::env;
+  |     ^^^^^^^^
+
+warning: unused variable: `worst`
+   --> src\modules\disk.rs:520:21
+    |
+520 |                 let worst = attr.get("worst").and_then(|v| v.as_i64()).unwrap_or(100);
+    |                     ^^^^^ help: if this is intentional, prefix it with an underscore: `_worst`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `stdout`
+   --> src\modules\disk.rs:582:9
+    |
+582 |     let stdout = match output {
+    |         ^^^^^^ help: if this is intentional, prefix it with an underscore: `_stdout`
+
+warning: type alias `SabiResult` is never used
+  --> src\error.rs:77:10
+   |
+77 | pub type SabiResult<T> = Result<T, SabiError>;
+   |          ^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `bytes_to_gb` is never used
+  --> src\util.rs:30:8
+   |
+30 | pub fn bytes_to_gb(bytes: u64) -> f64 {
+   |        ^^^^^^^^^^^
+
+warning: function `get_config_dir` is never used
+  --> src\util.rs:79:8
+   |
+79 | pub fn get_config_dir() -> PathBuf {
+   |        ^^^^^^^^^^^^^^
+
+warning: function `chrono_now` is never used
+  --> src\util.rs:93:8
+   |
+93 | pub fn chrono_now() -> String {
+   |        ^^^^^^^^^^
+
+warning: function `version_is_newer` is never used
+  --> src\util.rs:99:8
+   |
+99 | pub fn version_is_newer(current: &str, latest: &str) -> bool {
+   |        ^^^^^^^^^^^^^^^^
+
+warning: trait `CommandCreationFlags` is never used
+   --> src\util.rs:119:11
+    |
+119 | pub trait CommandCreationFlags {
+    |           ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `EmptyFolderItem` is never constructed
+  --> src\modules\cleaner.rs:32:12
+   |
+32 | pub struct EmptyFolderItem {
+   |            ^^^^^^^^^^^^^^^
+
+warning: struct `LargeFileItem` is never constructed
+  --> src\modules\cleaner.rs:48:12
+   |
+48 | pub struct LargeFileItem {
+   |            ^^^^^^^^^^^^^
+
+warning: struct `DuplicateGroup` is never constructed
+  --> src\modules\cleaner.rs:69:12
+   |
+69 | pub struct DuplicateGroup {
+   |            ^^^^^^^^^^^^^^
+
+warning: struct `DuplicateFile` is never constructed
+  --> src\modules\cleaner.rs:77:12
+   |
+77 | pub struct DuplicateFile {
+   |            ^^^^^^^^^^^^^
+
+warning: function `is_protected_folder` is never used
+  --> src\modules\cleaner.rs:86:4
+   |
+86 | fn is_protected_folder(path: &std::path::Path) -> bool {
+   |    ^^^^^^^^^^^^^^^^^^^
+
+warning: function `is_truly_empty` is never used
+  --> src\modules\cleaner.rs:97:4
+   |
+97 | fn is_truly_empty(path: &std::path::Path) -> bool {
+   |    ^^^^^^^^^^^^^^
+
+warning: function `categorize_file` is never used
+   --> src\modules\cleaner.rs:104:4
+    |
+104 | fn categorize_file(ext: &str) -> String {
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `find_duplicate_files` is never used
+   --> src\modules\cleaner.rs:422:14
+    |
+422 | pub async fn find_duplicate_files(target_dir: String, min_size_kb: u64) -> Result<Vec<DuplicateGroup>, String> {
+    |              ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `AppUpdateInfo` is never constructed
+   --> src\modules\system.rs:160:12
+    |
+160 | pub struct AppUpdateInfo {
+    |            ^^^^^^^^^^^^^
+
+warning: struct `OptimizationScore` is never constructed
+   --> src\modules\performance.rs:111:12
+    |
+111 | pub struct OptimizationScore {
+    |            ^^^^^^^^^^^^^^^^^
+
+warning: struct `ScoreCategory` is never constructed
+   --> src\modules\performance.rs:119:12
+    |
+119 | pub struct ScoreCategory {
+    |            ^^^^^^^^^^^^^
+
+warning: struct `Recommendation` is never constructed
+   --> src\modules\performance.rs:127:12
+    |
+127 | pub struct Recommendation {
+    |            ^^^^^^^^^^^^^^
+
+warning: struct `UpdateInfo` is never constructed
+   --> src\modules\network.rs:108:12
+    |
+108 | pub struct UpdateInfo {
+    |            ^^^^^^^^^^
+
+warning: function `invalidate` is never used
+  --> src\modules\cache.rs:51:8
+   |
+51 | pub fn invalidate(key: &str) {
+   |        ^^^^^^^^^^
+
+warning: function `is_path_excluded` is never used
+   --> src\modules\policy.rs:108:8
+    |
+108 | pub fn is_path_excluded(path: &str) -> bool {
+    |        ^^^^^^^^^^^^^^^^
+
+warning: function `hash_file` is never used
+  --> src\modules\audit.rs:93:8
+   |
+93 | pub fn hash_file(path: &str) -> String {
+   |        ^^^^^^^^^
+
+warning: function `hash_string` is never used
+   --> src\modules\audit.rs:105:8
+    |
+105 | pub fn hash_string(value: &str) -> String {
+    |        ^^^^^^^^^^^
+
+warning: function `backup_registry_key` is never used
+  --> src\modules\rollback.rs:81:8
+   |
+81 | pub fn backup_registry_key(key_path: &str) -> Result<String, String> {
+   |        ^^^^^^^^^^^^^^^^^^^
+
+warning: `sabi` (lib) generated 30 warnings (run `cargo fix --lib -p sabi` to apply 6 suggestions)
+    Finished `release` profile [optimized] target(s) in 2m 15s
+       Built application at: C:\Users\bati-\OneDrive\Documents\AG-SysPro\src-tauri\target\release\sabi.exe
+        Info Patching C:\Users\bati-\OneDrive\Documents\AG-SysPro\src-tauri\target\release\sabi.exe with bundle type information: msi
+        Info Target: x64
+     Running candle for "C:\\Users\\bati-\\OneDrive\\Documents\\AG-SysPro\\src-tauri\\target\\release\\wix\\x64\\main.wxs"
+     Running light to produce C:\Users\bati-\OneDrive\Documents\AG-SysPro\src-tauri\target\release\bundle\msi\SABI_1.3.0_x64_en-US.msi
+        Info Patching C:\Users\bati-\OneDrive\Documents\AG-SysPro\src-tauri\target\release\sabi.exe with bundle type information: nsis
+        Info Target: x64
+     Running makensis to produce C:\Users\bati-\OneDrive\Documents\AG-SysPro\src-tauri\target\release\bundle\nsis\SABI_1.3.0_x64-setup.exe
+    Finished 2 bundles at:
+        C:\Users\bati-\OneDrive\Documents\AG-SysPro\src-tauri\target\release\bundle\msi\SABI_1.3.0_x64_en-US.msi
+        C:\Users\bati-\OneDrive\Documents\AG-SysPro\src-tauri\target\release\bundle\nsis\SABI_1.3.0_x64-setup.exe
+

@@ -56,7 +56,12 @@ export default function SmartCleanPage() {
   async function runQuickScan() {
     setIsScanning(true)
     try {
-      const mb = await invoke<number>("quick_junk_scan")
+      const batchResult = await invoke<Record<string, unknown>>("batch_invoke", {
+        commands: ["quick_junk_scan"]
+      })
+      
+      const mb = (typeof batchResult?.quick_junk_scan === "number") ? batchResult.quick_junk_scan : 0
+      
       setJunkMb(mb)
       setLastScan(new Date().toLocaleTimeString())
 

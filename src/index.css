@@ -113,3 +113,32 @@
     text-wrap: balance;
   }
 }
+
+/* Accessibility: High Contrast Mode */
+@media (prefers-contrast: more) {
+  :root {
+    --border: 220 20% 40%;
+    --input: 220 20% 40%;
+    --muted-foreground: 220 20% 20%;
+    --primary: 220 100% 40%;
+  }
+  .dark {
+    --border: 220 20% 70%;
+    --input: 220 20% 70%;
+    --muted-foreground: 220 20% 90%;
+    --primary: 220 100% 60%;
+  }
+}
+
+/* Accessibility: Global Focus Ring for Keyboard Nav */
+@layer base {
+  a:focus-visible, 
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}

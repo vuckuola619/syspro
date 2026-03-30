@@ -26,9 +26,9 @@ export default function WindowsDebloaterPage() {
     setIsScanning(true)
     try {
       const data = await invoke<BloatwareApp[]>("scan_bloatware")
-      setApps(data)
-      // Auto-select "safe" items
-      setSelected(new Set(data.filter(a => a.category === "safe").map(a => a.name)))
+      const safeData = Array.isArray(data) ? data : []
+      setApps(safeData)
+      setSelected(new Set(safeData.filter(a => a.category === "safe").map(a => a.name)))
     } catch (e) { toast.error(String(e)) }
     finally { setIsScanning(false) }
   }

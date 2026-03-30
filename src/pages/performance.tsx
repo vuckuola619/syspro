@@ -42,8 +42,16 @@ export default function PerformancePage() {
     setOptimizeResult(null)
     try {
       const result = await invoke<OptimizeResult>("optimize_memory")
-      setOptimizeResult(result)
-      toast.success(`Freed ${result.freed_mb.toFixed(0)} MB of RAM`)
+      const safeResult = {
+        ...result,
+        freed_mb: result?.freed_mb ?? 0,
+        before_mb: result?.before_mb ?? 0,
+        after_mb: result?.after_mb ?? 0,
+        total_mb: result?.total_mb ?? 0,
+        actions: Array.isArray(result?.actions) ? result.actions : []
+      }
+      setOptimizeResult(safeResult)
+      toast.success(`Freed ${safeResult.freed_mb.toFixed(0)} MB of RAM`)
     } catch (e) {
       toast.error(`Optimization failed: ${e}`)
     } finally {
@@ -60,7 +68,12 @@ export default function PerformancePage() {
   async function loadStats() {
     try {
       const data = await invoke<PerformanceStats>("get_processes")
-      setStats(data)
+      setStats({
+        ...data,
+        cpu_usage: data?.cpu_usage ?? 0,
+        ram_usage: data?.ram_usage ?? 0,
+        processes: Array.isArray(data?.processes) ? data.processes : [],
+      })
     } catch (e) {
       console.error("Failed to fetch process stats:", e)
     }
@@ -84,10 +97,10 @@ export default function PerformancePage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">CPU Usage</p>
-                <p className="text-lg font-semibold">{stats.cpu_usage.toFixed(1)}%</p>
+                <p className="text-lg font-semibold">{(stats.cpu_usage ?? 0).toFixed(1)}%</p>
               </div>
             </div>
-            <Progress value={stats.cpu_usage} className="mt-3 h-1.5" indicatorClassName="bg-blue-500" />
+            <Progress value={stats.cpu_usage ?? 0} className="mt-3 h-1.5" indicatorClassName="bg-blue-500" />
           </CardContent>
         </Card>
         <Card>
@@ -98,10 +111,10 @@ export default function PerformancePage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Memory</p>
-                <p className="text-lg font-semibold">{stats.ram_usage.toFixed(1)}%</p>
+                <p className="text-lg font-semibold">{(stats.ram_usage ?? 0).toFixed(1)}%</p>
               </div>
             </div>
-            <Progress value={stats.ram_usage} className="mt-3 h-1.5" indicatorClassName="bg-violet-500" />
+            <Progress value={stats.ram_usage ?? 0} className="mt-3 h-1.5" indicatorClassName="bg-violet-500" />
           </CardContent>
         </Card>
         <Card>
@@ -112,7 +125,7 @@ export default function PerformancePage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Optimization</p>
-                <p className="text-lg font-semibold">{optimizeResult ? `${optimizeResult.freed_mb.toFixed(0)} MB freed` : "Ready"}</p>
+                <p className="text-lg font-semibold">{optimizeResult ? `${(optimizeResult.freed_mb ?? 0).toFixed(0)} MB freed` : "Ready"}</p>
               </div>
             </div>
             <Button
@@ -140,14 +153,14 @@ export default function PerformancePage() {
                 <ScrollText className="h-4 w-4" /> Optimization Action Log
               </h3>
               <div className="flex gap-2">
-                <Badge variant="secondary">{optimizeResult.before_mb.toFixed(0)} → {optimizeResult.after_mb.toFixed(0)} MB</Badge>
+                <Badge variant="secondary">{(optimizeResult.before_mb ?? 0).toFixed(0)} → {(optimizeResult.after_mb ?? 0).toFixed(0)} MB</Badge>
                 <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
-                  {optimizeResult.freed_mb.toFixed(0)} MB freed
+                  {(optimizeResult.freed_mb ?? 0).toFixed(0)} MB freed
                 </Badge>
               </div>
             </div>
             <div className="divide-y max-h-[300px] overflow-y-auto">
-              {optimizeResult.actions.map((action, i) => (
+              {Array.isArray(optimizeResult.actions) && optimizeResult.actions.map((action, i) => (
                 <div key={i} className="px-4 py-2 text-sm font-mono">
                   <span className="text-muted-foreground mr-2 text-xs">[{String(i + 1).padStart(2, "0")}]</span>
                   <span className={
@@ -167,10 +180,10 @@ export default function PerformancePage() {
         <CardContent className="p-0">
           <div className="px-4 py-3 border-b flex items-center justify-between">
             <h3 className="text-sm font-medium">Running Processes</h3>
-            <Badge variant="secondary">{stats.processes.length} top processes</Badge>
+            <Badge variant="secondary">{(stats.processes ?? []).length} top processes</Badge>
           </div>
           <div className="divide-y">
-            {stats.processes.map((proc: ProcessInfo) => (
+            {Array.isArray(stats.processes) && stats.processes.map((proc: ProcessInfo) => (
               <div key={proc.pid} className="flex items-center px-4 py-2.5">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{proc.name}</p>
@@ -178,13 +191,13 @@ export default function PerformancePage() {
                 </div>
                 <div className="text-right w-20">
                   <p className="text-xs text-muted-foreground">CPU</p>
-                  <p className={`text-sm font-medium ${proc.cpu_percent > 10 ? "text-red-600" : ""}`}>
-                    {proc.cpu_percent.toFixed(1)}%
+                  <p className={`text-sm font-medium ${(proc.cpu_percent ?? 0) > 10 ? "text-red-600" : ""}`}>
+                    {(proc.cpu_percent ?? 0).toFixed(1)}%
                   </p>
                 </div>
                 <div className="text-right w-24">
                   <p className="text-xs text-muted-foreground">Memory</p>
-                  <p className="text-sm font-medium">{proc.memory_mb < 1 ? "< 1" : proc.memory_mb.toFixed(0)} MB</p>
+                  <p className="text-sm font-medium">{(proc.memory_mb ?? 0) < 1 ? "< 1" : (proc.memory_mb ?? 0).toFixed(0)} MB</p>
                 </div>
               </div>
             ))}

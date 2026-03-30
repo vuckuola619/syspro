@@ -23,9 +23,10 @@ export default function LoginMonitorPage() {
     setIsLoading(true)
     try {
       const data = await invoke<LoginEvent[]>("get_login_events", { maxEvents: 100 })
-      setEvents(data)
-      const failed = data.filter(e => e.status === "Failed").length
-      toast.success(`Loaded ${data.length} login events${failed > 0 ? ` (${failed} failed!)` : ""}`)
+      const safeData = Array.isArray(data) ? data : []
+      setEvents(safeData)
+      const failed = safeData.filter(e => e.status === "Failed").length
+      toast.success(`Loaded ${safeData.length} login events${failed > 0 ? ` (${failed} failed!)` : ""}`)
     } catch (e) {
       toast.error(String(e))
     } finally {

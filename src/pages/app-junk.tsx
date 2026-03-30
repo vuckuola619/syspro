@@ -37,9 +37,10 @@ export default function AppJunkPage() {
     setSelectedPaths(new Set())
     try {
       const data = await invoke<UwpJunkItem[]>("scan_uwp_junk")
-      setItems(data)
-      const total = data.reduce((s, i) => s + i.size_mb, 0)
-      toast.success(`Found ${data.length} junk entries (${formatSize(total)})`)
+      const safeData = Array.isArray(data) ? data : []
+      setItems(safeData)
+      const total = safeData.reduce((s, i) => s + (i.size_mb ?? 0), 0)
+      toast.success(`Found ${safeData.length} junk entries (${formatSize(total)})`)
     } catch (e) {
       toast.error(String(e))
     } finally {

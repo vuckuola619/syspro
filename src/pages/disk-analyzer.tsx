@@ -58,7 +58,12 @@ export default function DiskAnalyzerPage() {
       setExpandedFolder(null)
 
       const data = await invoke<DiskAnalysisResult>("analyze_disk_space", { targetDir: selectedPath as string })
-      setResult(data)
+      setResult({
+        ...data,
+        folders: Array.isArray(data?.folders) ? data.folders : [],
+        total_size_mb: data?.total_size_mb ?? 0,
+        total_files: data?.total_files ?? 0,
+      })
     } catch (e) {
       toast.error(String(e))
     } finally {
@@ -210,7 +215,7 @@ export default function DiskAnalyzerPage() {
                   </div>
 
                   {/* Expanded Children */}
-                  {isExpanded && folder.children.length > 0 && (
+                  {isExpanded && Array.isArray(folder.children) && folder.children.length > 0 && (
                     <div className="border-t bg-muted/10">
                       {folder.children.map((child) => (
                         <div key={child.path} className="flex items-center gap-3 px-4 py-2 pl-14">
