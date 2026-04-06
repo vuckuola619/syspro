@@ -34,3 +34,4 @@ src-tauri/target/
 
 # Landing page (separate repo: landing-sabi)
 website/
+landing-sabi/
